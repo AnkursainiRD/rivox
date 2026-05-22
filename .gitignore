@@ -11,11 +11,12 @@ node_modules
 .env
 server/.env
 
-# Wireframe / design HTML files (root level)
+# Wireframe / design HTML files
 /A *.html
 /Full *.html
 /Rivox *.html
 /v3 *.html
+Rivox-branding/*.html
 dist
 dist-ssr
 *.local
