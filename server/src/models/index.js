@@ -173,7 +173,7 @@ Channel.belongsTo(User, { foreignKey: "created_by", as: "creator" });
 
 const Issue = sequelize.define("Issue", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-  number: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, unique: true },
+  number: { type: DataTypes.INTEGER, autoIncrement: true, unique: true },
   title: { type: DataTypes.STRING(255), allowNull: false },
   description: DataTypes.TEXT,
   status: { type: DataTypes.ENUM("open", "in_progress", "resolved", "closed", "wont_fix"), defaultValue: "open" },
