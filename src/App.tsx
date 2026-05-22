@@ -49,44 +49,7 @@ function App() {
     );
   }
 
-  // No orgs at all
-  if (auth.orgs.length === 0) {
-    const canCreate = auth.user.role === "super_admin" || auth.user.role === "admin";
-
-    if (canCreate) {
-      return (
-        <div className="h-screen bg-app-bg">
-          <CreateOrg onCreated={() => window.location.reload()} />
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex h-screen bg-app-bg items-center justify-center">
-        <div className="text-center max-w-sm">
-          <div className="w-12 h-12 rounded-xl bg-accent-soft flex items-center justify-center mx-auto mb-4">
-            <svg width="20" height="20" fill="none" stroke="var(--color-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-semibold text-ink mb-1">No workspace yet</h2>
-          <p className="text-sm text-muted mb-6">
-            You haven't been added to any organization. Ask your admin to invite you.
-          </p>
-          <button
-            onClick={auth.logout}
-            className="px-4 py-2 border border-border text-sm font-medium rounded-btn text-muted hover:text-ink hover:bg-surface-2 transition-colors"
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Has orgs but none selected — show picker
+  // No orgs or no active org — show workspace picker (handles both states)
   if (!auth.activeOrg) {
     return <WorkspacePicker auth={auth} />;
   }
@@ -200,7 +163,11 @@ function WorkspacePicker({ auth }: { auth: ReturnType<typeof useAuth> }) {
             {user.display_name || user.username}
           </h1>
           <p className="text-[14px] leading-relaxed text-white/40 max-w-[280px]">
-            You have <span className="text-white/70 font-medium">{auth.orgs.length} workspace{auth.orgs.length !== 1 ? "s" : ""}</span> linked to your account. Pick one to continue.
+            {auth.orgs.length > 0 ? (
+              <>You have <span className="text-white/70 font-medium">{auth.orgs.length} workspace{auth.orgs.length !== 1 ? "s" : ""}</span> linked to your account. Pick one to continue.</>
+            ) : (
+              <>You're not in any workspace yet. Join one with an invite link to get started.</>
+            )}
           </p>
         </div>
 
@@ -235,33 +202,55 @@ function WorkspacePicker({ auth }: { auth: ReturnType<typeof useAuth> }) {
           <div className="flex items-start justify-between mb-6">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted mb-1">Choose a workspace</div>
-              <h2 className="text-[28px] font-semibold text-ink tracking-tight">Where to today?</h2>
+              <h2 className="text-[28px] font-semibold text-ink tracking-tight">{auth.orgs.length > 0 ? "Where to today?" : "No workspace yet"}</h2>
             </div>
-            <div className="relative mt-2">
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" strokeLinecap="round" />
-              </svg>
-              <input
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                placeholder="Filter workspaces"
-                className="w-[220px] pl-9 pr-10 py-2 text-[13px] text-ink bg-surface border border-border rounded-xl outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 placeholder:text-muted/40 transition-colors"
-              />
-              <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted/30 bg-surface-2 border border-border px-1.5 py-0.5 rounded">⌘K</kbd>
-            </div>
-          </div>
-
-          {/* RECENT label */}
-          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted mb-2.5">Recent</div>
-
-          {/* Org list */}
-          <div className="space-y-2.5">
-            {filtered.map((org, i) => (
-              <div key={org.id} className="bg-surface border border-border rounded-2xl overflow-hidden hover:border-accent/30 transition-colors">
-                {orgRow(org, i)}
+            {auth.orgs.length > 0 && (
+              <div className="relative mt-2">
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" strokeLinecap="round" />
+                </svg>
+                <input
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  placeholder="Filter workspaces"
+                  className="w-[220px] pl-9 pr-10 py-2 text-[13px] text-ink bg-surface border border-border rounded-xl outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 placeholder:text-muted/40 transition-colors"
+                />
+                <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted/30 bg-surface-2 border border-border px-1.5 py-0.5 rounded">⌘K</kbd>
               </div>
-            ))}
+            )}
           </div>
+
+          {auth.orgs.length > 0 ? (
+            <>
+              {/* RECENT label */}
+              <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted mb-2.5">Recent</div>
+
+              {/* Org list */}
+              <div className="space-y-2.5">
+                {filtered.map((org, i) => (
+                  <div key={org.id} className="bg-surface border border-border rounded-2xl overflow-hidden hover:border-accent/30 transition-colors">
+                    {orgRow(org, i)}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* Empty state */
+            <div className="bg-surface border border-border rounded-2xl p-8 text-center mt-2">
+              <div className="w-14 h-14 rounded-2xl bg-accent-soft flex items-center justify-center mx-auto mb-4">
+                <svg width="24" height="24" fill="none" stroke="var(--color-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+                </svg>
+              </div>
+              <p className="text-[14px] font-medium text-ink mb-1">You're not in any workspace</p>
+              <p className="text-[12.5px] text-muted mb-5">Ask your admin to invite you, or join with an invite link.</p>
+              <button className="px-5 py-2.5 text-[13px] font-medium text-white bg-accent rounded-xl hover:opacity-90 transition-opacity inline-flex items-center gap-2">
+                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" strokeLinecap="round" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" strokeLinecap="round" /></svg>
+                Join with invite
+              </button>
+            </div>
+          )}
 
           {/* New workspace */}
           {canCreate && (
@@ -324,29 +313,49 @@ function WorkspacePicker({ auth }: { auth: ReturnType<typeof useAuth> }) {
             <p className="text-[13px] text-muted mt-1.5">Choose a workspace to pick up where you left off.</p>
           </div>
 
-          {/* Org list card */}
-          <div className="bg-white dark:bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">Your workspaces · {auth.orgs.length}</span>
-            </div>
-            <div className="divide-y divide-border">
-              {filtered.map((org, i) => orgRow(org, i))}
-            </div>
-          </div>
+          {auth.orgs.length > 0 ? (
+            <>
+              {/* Org list card */}
+              <div className="bg-white dark:bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">Your workspaces · {auth.orgs.length}</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {filtered.map((org, i) => orgRow(org, i))}
+                </div>
+              </div>
 
-          {/* Action buttons */}
-          <div className="flex gap-3 mt-4">
-            {canCreate && (
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-[13px] font-medium text-ink bg-white dark:bg-surface border border-border rounded-2xl hover:bg-surface-2 transition-colors shadow-sm">
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
-                New workspace
+              {/* Action buttons */}
+              <div className="flex gap-3 mt-4">
+                {canCreate && (
+                  <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-[13px] font-medium text-ink bg-white dark:bg-surface border border-border rounded-2xl hover:bg-surface-2 transition-colors shadow-sm">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
+                    New workspace
+                  </button>
+                )}
+                <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-[13px] font-medium text-ink bg-white dark:bg-surface border border-border rounded-2xl hover:bg-surface-2 transition-colors shadow-sm">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" strokeLinecap="round" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" strokeLinecap="round" /></svg>
+                  Join with invite
+                </button>
+              </div>
+            </>
+          ) : (
+            /* Empty state */
+            <div className="bg-white dark:bg-surface border border-border rounded-2xl p-8 text-center shadow-sm">
+              <div className="w-14 h-14 rounded-2xl bg-accent-soft flex items-center justify-center mx-auto mb-4">
+                <svg width="24" height="24" fill="none" stroke="var(--color-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+                </svg>
+              </div>
+              <p className="text-[14px] font-medium text-ink mb-1">You're not in any workspace</p>
+              <p className="text-[12.5px] text-muted mb-5">Ask your admin to invite you, or join with an invite link.</p>
+              <button className="px-5 py-2.5 text-[13px] font-medium text-white bg-accent rounded-xl hover:opacity-90 transition-opacity inline-flex items-center gap-2">
+                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" strokeLinecap="round" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" strokeLinecap="round" /></svg>
+                Join with invite
               </button>
-            )}
-            <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-[13px] font-medium text-ink bg-white dark:bg-surface border border-border rounded-2xl hover:bg-surface-2 transition-colors shadow-sm">
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" strokeLinecap="round" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" strokeLinecap="round" /></svg>
-              Join with invite
-            </button>
-          </div>
+            </div>
+          )}
 
           {/* Help link */}
           <div className="text-center mt-6">
