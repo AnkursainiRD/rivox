@@ -10,6 +10,12 @@ lerna-debug.log*
 node_modules
 .env
 server/.env
+
+# Wireframe / design HTML files (root level)
+/A *.html
+/Full *.html
+/Rivox *.html
+/v3 *.html
 dist
 dist-ssr
 *.local
