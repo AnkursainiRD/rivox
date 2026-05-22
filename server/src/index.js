@@ -1,0 +1,46 @@
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
+const express = require("express");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const { sequelize } = require("./models");
+const routes = require("./routes");
+const errorHandler = require("./middleware/errorHandler");
+
+const app = express();
+
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+app.use(cookieParser());
+
+// All routes under /api
+app.use("/api", routes);
+
+// Health check
+app.get("/api/health", async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    res.json({ status: "ok", db: "connected" });
+  } catch (err) {
+    res.status(500).json({ status: "error", db: err.message });
+  }
+});
+
+// Global error handler
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 3001;
+
+async function start() {
+  await sequelize.authenticate();
+  console.log("MySQL connected via Sequelize");
+
+  app.listen(PORT, () => {
+    console.log(`Rivox API running on http://localhost:${PORT}`);
+  });
+}
+
+start().catch((err) => {
+  console.error("Failed to start:", err);
+  process.exit(1);
+});

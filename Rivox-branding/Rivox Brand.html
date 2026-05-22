@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Rivox — Brand Sheet</title>
+<link rel="icon" href="assets/rivox-favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0a0a0a;
+    --ink-2: #27272a;
+    --muted: #71717a;
+    --muted-soft: #a1a1aa;
+    --paper: #ffffff;
+    --warm: #f6f6f4;
+    --surface: #ffffff;
+    --surface-2: #fafafa;
+    --border: #e5e5e1;
+    --border-hard: #d4d4d0;
+    --indigo: #5b5bd6;
+    --indigo-soft: #eeeefb;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--warm);
+    color: var(--ink);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 64px 40px 96px;
+  }
+  /* Header */
+  .hero {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 48px;
+    margin-bottom: 56px;
+  }
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin: 0 0 12px;
+    line-height: 1.05;
+  }
+  .lede {
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0;
+  }
+  /* Section */
+  section { margin-bottom: 72px; }
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 4px;
+  }
+  .section-sub {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: 0 0 24px;
+  }
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  }
+  .card.dark {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  /* Grids */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  /* Showcase */
+  .showcase {
+    display: grid;
+    place-items: center;
+    min-height: 280px;
+    padding: 24px;
+  }
+  .showcase .label {
+    margin-top: 18px;
+    font-size: 11px;
+    font-family: "JetBrains Mono", monospace;
+    color: var(--muted);
+    letter-spacing: 0;
+  }
+  .card.dark .label { color: var(--muted-soft); }
+  /* Sizes row */
+  .sizes-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 36px;
+    padding: 32px 0;
+  }
+  .size-cell { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .size-cell .size-label {
+    font-size: 10.5px;
+    font-family: "JetBrains Mono", monospace;
+    color: var(--muted);
+  }
+  /* Color swatch */
+  .swatch {
+    aspect-ratio: 1.6;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+    overflow: hidden;
+  }
+  .swatch-name { font-size: 12px; font-weight: 600; letter-spacing: -0.005em; }
+  .swatch-hex {
+    font-size: 11px;
+    font-family: "JetBrains Mono", monospace;
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+  .swatch.dark { color: var(--paper); }
+  .swatch.light { color: var(--ink); border: 1px solid var(--border); }
+  /* Type sample */
+  .type-row {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 24px;
+    padding: 14px 0;
+    align-items: baseline;
+    border-bottom: 1px solid var(--border);
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-meta {
+    font-size: 11px;
+    font-family: "JetBrains Mono", monospace;
+    color: var(--muted);
+  }
+  /* Don't list */
+  .dont-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .dont {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+  }
+  .dont .x {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #fee2e2; color: #b91c1c;
+    display: grid; place-items: center;
+    font-size: 12px;
+  }
+  .dont p {
+    font-size: 11.5px;
+    color: var(--muted);
+    text-align: center;
+    margin: 0;
+    line-height: 1.4;
+  }
+  /* Download row */
+  .dl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .dl {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: border-color .15s;
+  }
+  .dl:hover { border-color: var(--border-hard); }
+  .dl-preview {
+    width: 36px; height: 36px;
+    background: var(--surface-2);
+    border-radius: 7px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .dl-meta { flex: 1; min-width: 0; }
+  .dl-name { font-size: 13px; font-weight: 500; letter-spacing: -0.005em; }
+  .dl-sub { font-size: 11px; color: var(--muted); font-family: "JetBrains Mono", monospace; }
+  .dl-arrow { color: var(--muted-soft); }
+  /* Lockup horizontal */
+  .lockup-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .wordmark {
+    font-size: 36px;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+  footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="hero">
+    <div class="eyebrow">Brand · v1</div>
+    <h1>rivox</h1>
+    <p class="lede">A premium keyhole mark and a quiet lowercase wordmark. Built from two geometric primitives. Pure monochrome — the product gets the color.</p>
+  </header>
+
+  <!-- ── Mark ─────────────────────────────────────────────────── -->
+  <section>
+    <h2>The mark</h2>
+    <p class="section-sub">A circle and a tapered stem. Reads as both lock and share-node. Holds at favicon size because the construction is two primitives.</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="showcase">
+          <svg width="160" height="160" viewBox="0 0 96 96">
+            <rect width="96" height="96" rx="22" fill="#0a0a0a"/>
+            <circle cx="48" cy="40" r="13" fill="#ffffff"/>
+            <path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#ffffff"/>
+          </svg>
+          <div class="label">Primary · on light</div>
+        </div>
+      </div>
+      <div class="card dark">
+        <div class="showcase">
+          <svg width="160" height="160" viewBox="0 0 96 96">
+            <rect width="96" height="96" rx="22" fill="#ffffff"/>
+            <circle cx="48" cy="40" r="13" fill="#0a0a0a"/>
+            <path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#0a0a0a"/>
+          </svg>
+          <div class="label">Inverted · on dark</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+      <div class="eyebrow" style="margin-bottom: 12px;">Sizes</div>
+      <div class="sizes-row">
+        <div class="size-cell">
+          <svg width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+          <div class="size-label">96px</div>
+        </div>
+        <div class="size-cell">
+          <svg width="48" height="48" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+          <div class="size-label">48px</div>
+        </div>
+        <div class="size-cell">
+          <svg width="32" height="32" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+          <div class="size-label">32px</div>
+        </div>
+        <div class="size-cell">
+          <svg width="20" height="20" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+          <div class="size-label">20px</div>
+        </div>
+        <div class="size-cell">
+          <svg width="14" height="14" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+          <div class="size-label">14px</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Lockup ─────────────────────────────────────────────────── -->
+  <section>
+    <h2>Lockup</h2>
+    <p class="section-sub">Mark + wordmark side by side. Wordmark is Inter Medium (500), tracked −0.025em, lowercase. Gap between mark and word = 32% of mark height.</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="showcase">
+          <div class="lockup-row">
+            <svg width="60" height="60" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+            <div class="wordmark">rivox</div>
+          </div>
+          <div class="label">Lockup · light</div>
+        </div>
+      </div>
+      <div class="card dark">
+        <div class="showcase">
+          <div class="lockup-row">
+            <svg width="60" height="60" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#fff"/><circle cx="48" cy="40" r="13" fill="#0a0a0a"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#0a0a0a"/></svg>
+            <div class="wordmark" style="color: #fff;">rivox</div>
+          </div>
+          <div class="label">Lockup · dark</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Wordmark ─────────────────────────────────────────────────── -->
+  <section>
+    <h2>Wordmark</h2>
+    <p class="section-sub">Set in Inter Medium. Always lowercase. Use when the mark would feel redundant (e.g. footer credits, plain-text headers).</p>
+    <div class="card">
+      <div class="showcase">
+        <div class="wordmark" style="font-size: 72px;">rivox</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Color ─────────────────────────────────────────────────── -->
+  <section>
+    <h2>Color</h2>
+    <p class="section-sub">The logo is monochrome. Color shows up in the product UI only. Indigo is the single accent; never use it in the logo itself.</p>
+    <div class="grid-4">
+      <div class="swatch dark" style="background: #0a0a0a;">
+        <div class="swatch-name">Ink</div>
+        <div class="swatch-hex">#0A0A0A</div>
+      </div>
+      <div class="swatch light" style="background: #ffffff;">
+        <div class="swatch-name">Paper</div>
+        <div class="swatch-hex">#FFFFFF</div>
+      </div>
+      <div class="swatch light" style="background: #f6f6f4;">
+        <div class="swatch-name">Warm bg</div>
+        <div class="swatch-hex">#F6F6F4</div>
+      </div>
+      <div class="swatch dark" style="background: #5b5bd6;">
+        <div class="swatch-name">Indigo · UI accent</div>
+        <div class="swatch-hex">#5B5BD6</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Type ─────────────────────────────────────────────────── -->
+  <section>
+    <h2>Typography</h2>
+    <p class="section-sub">Inter across the product. JetBrains Mono for code, API key fingerprints, and tabular meta.</p>
+    <div class="card">
+      <div class="type-row">
+        <div class="type-meta">Display</div>
+        <div style="font-size: 40px; font-weight: 700; letter-spacing: -0.03em; line-height: 1;">Manage your API keys</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Title</div>
+        <div style="font-size: 24px; font-weight: 600; letter-spacing: -0.025em;">Team & Permissions</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Body</div>
+        <div style="font-size: 14px;">Members can use this key. Access is audit-logged.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Caption</div>
+        <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Last used 2 minutes ago</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Mono</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">sk-ant-•••••••••••••••dpc</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── In context ─────────────────────────────────────────────────── -->
+  <section>
+    <h2>In context</h2>
+    <p class="section-sub">How the system reads where it actually lives.</p>
+
+    <div class="grid-3">
+      <!-- Sidebar header -->
+      <div class="card" style="padding: 0;">
+        <div style="padding: 14px; background: #fbfbf9; border-bottom: 1px solid var(--border); border-radius: 14px 14px 0 0; display: flex; align-items: center; gap: 10px;">
+          <svg width="28" height="28" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; letter-spacing: -0.02em;">rivox</div>
+            <div style="font-size: 11px; color: var(--muted);">Acme Inc · Team</div>
+          </div>
+          <div style="color: var(--muted-soft); font-size: 14px;">›</div>
+        </div>
+        <div style="padding: 14px; font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace;">app sidebar header</div>
+      </div>
+
+      <!-- Browser tab -->
+      <div class="card" style="padding: 0;">
+        <div style="padding: 20px 16px 0; background: var(--warm); border-radius: 14px 14px 0 0;">
+          <div style="display: inline-flex; align-items: center; gap: 8px; background: #fff; padding: 8px 14px; border-radius: 10px 10px 0 0; font-size: 12px; font-weight: 500; letter-spacing: -0.005em; box-shadow: 0 1px 0 var(--border);">
+            <svg width="14" height="14" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+            rivox — API Keys
+            <span style="color: var(--muted-soft); margin-left: 6px;">×</span>
+          </div>
+        </div>
+        <div style="padding: 14px; font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace;">browser tab</div>
+      </div>
+
+      <!-- App icon -->
+      <div class="card" style="padding: 0;">
+        <div style="padding: 24px; background: linear-gradient(135deg, #f4f4f0, #e5e5e1); border-radius: 14px 14px 0 0; display: grid; place-items: center;">
+          <div style="filter: drop-shadow(0 8px 18px rgba(0,0,0,0.18));">
+            <svg width="80" height="80" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+          </div>
+        </div>
+        <div style="padding: 14px; font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace;">app icon</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Don't ─────────────────────────────────────────────────── -->
+  <section>
+    <h2>Don't</h2>
+    <p class="section-sub">A short list to keep it tight.</p>
+    <div class="dont-grid">
+      <div class="dont">
+        <span class="x">×</span>
+        <svg width="64" height="64" viewBox="0 0 96 96" style="transform: rotate(20deg);"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+        <p>Don't rotate the mark.</p>
+      </div>
+      <div class="dont">
+        <span class="x">×</span>
+        <svg width="80" height="40" viewBox="0 0 96 96" preserveAspectRatio="none"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+        <p>Don't stretch or skew.</p>
+      </div>
+      <div class="dont">
+        <span class="x">×</span>
+        <svg width="64" height="64" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#5b5bd6"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+        <p>Don't recolor the tile in brand accent.</p>
+      </div>
+      <div class="dont">
+        <span class="x">×</span>
+        <svg width="64" height="64" viewBox="0 0 96 96"><circle cx="48" cy="40" r="13" fill="#0a0a0a"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#0a0a0a"/></svg>
+        <p>Don't drop the tile in the lockup.</p>
+      </div>
+      <div class="dont">
+        <span class="x">×</span>
+        <div style="font-size: 36px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;">RIVOX</div>
+        <p>Don't set wordmark in uppercase.</p>
+      </div>
+      <div class="dont">
+        <span class="x">×</span>
+        <div style="font-family: 'Comic Sans MS', cursive; font-size: 36px;">rivox</div>
+        <p>Don't change the typeface.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Downloads ─────────────────────────────────────────────────── -->
+  <section>
+    <h2>Files</h2>
+    <p class="section-sub">SVG sources for the system. Right-click each to save.</p>
+    <div class="dl-grid">
+      <a class="dl" href="assets/rivox-mark.svg" download>
+        <div class="dl-preview"><svg width="22" height="22" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg></div>
+        <div class="dl-meta">
+          <div class="dl-name">Primary mark</div>
+          <div class="dl-sub">rivox-mark.svg</div>
+        </div>
+        <div class="dl-arrow">↓</div>
+      </a>
+      <a class="dl" href="assets/rivox-mark-inverted.svg" download>
+        <div class="dl-preview"><svg width="22" height="22" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#ffffff" stroke="#e5e5e1"/><circle cx="48" cy="40" r="13" fill="#0a0a0a"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#0a0a0a"/></svg></div>
+        <div class="dl-meta">
+          <div class="dl-name">Inverted mark</div>
+          <div class="dl-sub">rivox-mark-inverted.svg</div>
+        </div>
+        <div class="dl-arrow">↓</div>
+      </a>
+      <a class="dl" href="assets/rivox-mark-outline.svg" download>
+        <div class="dl-preview"><svg width="22" height="22" viewBox="0 0 96 96"><rect x="2" y="2" width="92" height="92" rx="21" fill="none" stroke="#0a0a0a" stroke-width="3"/><circle cx="48" cy="40" r="13" fill="#0a0a0a"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#0a0a0a"/></svg></div>
+        <div class="dl-meta">
+          <div class="dl-name">Outline mark</div>
+          <div class="dl-sub">rivox-mark-outline.svg</div>
+        </div>
+        <div class="dl-arrow">↓</div>
+      </a>
+      <a class="dl" href="assets/rivox-glyph.svg" download>
+        <div class="dl-preview"><svg width="22" height="22" viewBox="0 0 96 96"><circle cx="48" cy="40" r="13" fill="#0a0a0a"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#0a0a0a"/></svg></div>
+        <div class="dl-meta">
+          <div class="dl-name">Glyph only (currentColor)</div>
+          <div class="dl-sub">rivox-glyph.svg</div>
+        </div>
+        <div class="dl-arrow">↓</div>
+      </a>
+      <a class="dl" href="assets/rivox-lockup.svg" download>
+        <div class="dl-preview"><svg width="36" height="14" viewBox="0 0 280 80"><rect x="8" y="8" width="64" height="64" rx="15" fill="#0a0a0a"/><circle cx="40" cy="34" r="9" fill="#fff"/><path d="M33 40 L47 40 L49 60 L31 60 Z" fill="#fff"/><text x="88" y="52" fill="#0a0a0a" style="font-family: Inter, system-ui, sans-serif; font-weight: 500; font-size: 40px; letter-spacing: -0.025em;">rivox</text></svg></div>
+        <div class="dl-meta">
+          <div class="dl-name">Lockup (mark + wordmark)</div>
+          <div class="dl-sub">rivox-lockup.svg</div>
+        </div>
+        <div class="dl-arrow">↓</div>
+      </a>
+      <a class="dl" href="assets/rivox-wordmark.svg" download>
+        <div class="dl-preview"><svg width="36" height="12" viewBox="0 0 184 48"><text x="0" y="38" fill="#0a0a0a" style="font-family: Inter, system-ui, sans-serif; font-weight: 500; font-size: 40px; letter-spacing: -0.025em;">rivox</text></svg></div>
+        <div class="dl-meta">
+          <div class="dl-name">Wordmark only</div>
+          <div class="dl-sub">rivox-wordmark.svg</div>
+        </div>
+        <div class="dl-arrow">↓</div>
+      </a>
+      <a class="dl" href="assets/rivox-favicon.svg" download>
+        <div class="dl-preview"><svg width="18" height="18" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg></div>
+        <div class="dl-meta">
+          <div class="dl-name">Favicon (32px optimized)</div>
+          <div class="dl-sub">rivox-favicon.svg</div>
+        </div>
+        <div class="dl-arrow">↓</div>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <svg width="20" height="20" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#0a0a0a"/><circle cx="48" cy="40" r="13" fill="#fff"/><path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#fff"/></svg>
+    <span>rivox · brand sheet v1 · May 2026</span>
+  </footer>
+</div>
+</body>
+</html>

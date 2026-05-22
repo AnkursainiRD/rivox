@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+/* ── Rivox Design System ── */
+
+@theme {
+  /* App backgrounds */
+  --color-app-bg: #f6f6f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #fafafa;
+  --color-sidebar: #fbfbf9;
+
+  /* Text */
+  --color-ink: #0a0a0a;
+  --color-muted: #71717a;
+
+  /* Borders & lines */
+  --color-border: #e5e5e1;
+
+  /* Accent */
+  --color-accent: #5b5bd6;
+  --color-accent-soft: #eeeefb;
+
+  /* Status */
+  --color-status-prod: #ef4444;
+  --color-status-staging: #f59e0b;
+  --color-status-dev: #10b981;
+
+  /* Sticky note tonals */
+  --color-note-yellow: #fef3c7;
+  --color-note-blue: #dbeafe;
+  --color-note-green: #dcfce7;
+  --color-note-pink: #fce7f3;
+  --color-note-purple: #ede9fe;
+
+  /* Radius */
+  --radius-card: 10px;
+  --radius-btn: 7px;
+  --radius-btn-sm: 6px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-popover: 0 24px 60px -12px rgba(0, 0, 0, 0.18);
+
+  /* Fonts */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* ── Dark mode overrides ── */
+.dark {
+  --color-app-bg: #0a0a0a;
+  --color-surface: #141414;
+  --color-surface-2: #101010;
+  --color-sidebar: #0d0d0d;
+  --color-ink: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #27272a;
+  --color-accent: #7c7cf0;
+  --color-accent-soft: #1d1d35;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Base styles ── */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-app-bg);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Pointer cursor on all interactive elements */
+button,
+a,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+select,
+summary,
+kbd {
+  cursor: pointer;
+}
+
+/* Drawer slide-in */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in {
+  animation: slide-in-right 0.15s ease-out forwards;
+}
+
+/* Tight letter-spacing for display sizes */
+h1 { letter-spacing: -0.025em; }
+h2 { letter-spacing: -0.02em; }
+h3 { letter-spacing: -0.015em; }
+h4 { letter-spacing: -0.01em; }
+h5, h6 { letter-spacing: -0.005em; }
+
+/* ── Sticky note animations ── */
+
+/*
+ * 3D peel: origin is bottom edge so the top curls up first,
+ * like peeling a real sticky note off a surface.
+ */
+
+/* Peel off — top lifts, curls, then the whole note comes free */
+@keyframes sticky-peel {
+  0%   { transform: perspective(800px) rotateX(0deg) scale(1) translateY(0);
+         box-shadow: var(--shadow-card); }
+  20%  { transform: perspective(800px) rotateX(-6deg) scale(1) translateY(0);
+         box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+  45%  { transform: perspective(800px) rotateX(-12deg) scale(1.01) translateY(-2px);
+         box-shadow: 0 8px 20px -4px rgba(0,0,0,0.10); }
+  65%  { transform: perspective(800px) rotateX(-6deg) scale(1.03) translateY(-4px);
+         box-shadow: 0 14px 36px -6px rgba(0,0,0,0.15); }
+  100% { transform: perspective(800px) rotateX(0deg) scale(1.04) translateY(-3px);
+         box-shadow: 0 20px 50px -10px rgba(0,0,0,0.20); }
+}
+
+/* Stick down — card lowers, bottom hits first, top folds down with a bounce */
+@keyframes sticky-drop {
+  0%   { transform: perspective(800px) rotateX(0deg) scale(1.04) translateY(-3px);
+         box-shadow: 0 20px 50px -10px rgba(0,0,0,0.20); }
+  30%  { transform: perspective(800px) rotateX(5deg) scale(1.01) translateY(0px);
+         box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+  50%  { transform: perspective(800px) rotateX(8deg) scale(0.98) translateY(1px);
+         box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  70%  { transform: perspective(800px) rotateX(-2deg) scale(1.005) translateY(0);
+         box-shadow: var(--shadow-card); }
+  85%  { transform: perspective(800px) rotateX(1deg) scale(0.998); }
+  100% { transform: perspective(800px) rotateX(0deg) scale(1) translateY(0);
+         box-shadow: var(--shadow-card); }
+}
+
+.sticky-peeling {
+  transform-origin: center bottom;
+  animation: sticky-peel 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.sticky-dropping {
+  transform-origin: center bottom;
+  animation: sticky-drop 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* While actively dragging — keep the lifted perspective */
+.sticky-held {
+  transform-origin: center bottom;
+  transform: perspective(800px) rotateX(0deg) scale(1.04) translateY(-3px);
+  box-shadow: 0 20px 50px -10px rgba(0,0,0,0.20);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}

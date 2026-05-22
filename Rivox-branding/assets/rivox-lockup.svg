@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="80" viewBox="0 0 280 80">
+  
+  <g transform="translate(8,8)">
+    <rect width="64" height="64" rx="15" fill="#0a0a0a"></rect>
+    <g transform="scale(0.667)">
+      <circle cx="48" cy="40" r="13" fill="#ffffff"></circle>
+      <path d="M40 50 L56 50 L59 74 L37 74 Z" fill="#ffffff"></path>
+    </g>
+  </g>
+  
+  <text x="88" y="52" fill="#0a0a0a" style="font-family: &#39;Inter&#39;, system-ui, sans-serif; font-weight: 500; font-size: 40px; letter-spacing: -0.025em;">
+    rivox
+  </text>
+</svg>

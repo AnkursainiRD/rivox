@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Rivox — Wireframes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; min-height: 100vh; }
+  body {
+    background: #f4f4f0;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    color: #0a0a0a;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+</style>
+</head>
+<body>
+  <template id="__bundler_thumbnail" data-bg-color="#f4f4f0">
+    <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+      <rect x="180" y="120" width="840" height="560" rx="36" fill="#ffffff" stroke="#e5e5e1" stroke-width="3"/>
+      <rect x="180" y="120" width="840" height="56" rx="36" fill="#fbfbf9"/>
+      <circle cx="220" cy="148" r="9" fill="#ff5f57"/>
+      <circle cx="248" cy="148" r="9" fill="#febc2e"/>
+      <circle cx="276" cy="148" r="9" fill="#28c840"/>
+      <rect x="180" y="176" width="220" height="504" fill="#fbfbf9"/>
+      <rect x="200" y="200" width="36" height="36" rx="8" fill="#0a0a0a"/>
+      <rect x="248" y="208" width="100" height="10" rx="3" fill="#0a0a0a"/>
+      <rect x="248" y="224" width="60" height="6" rx="2" fill="#a1a1aa"/>
+      <rect x="200" y="280" width="180" height="32" rx="6" fill="#ffffff" stroke="#e5e5e1" stroke-width="2"/>
+      <circle cx="220" cy="296" r="6" fill="#5b5bd6"/>
+      <rect x="234" y="293" width="80" height="7" rx="2" fill="#0a0a0a"/>
+      <rect x="200" y="324" width="180" height="32" rx="6" fill="transparent"/>
+      <circle cx="220" cy="340" r="6" fill="#a1a1aa"/>
+      <rect x="234" y="337" width="100" height="6" rx="2" fill="#71717a"/>
+      <rect x="200" y="368" width="180" height="32" rx="6" fill="transparent"/>
+      <circle cx="220" cy="384" r="6" fill="#a1a1aa"/>
+      <rect x="234" y="381" width="70" height="6" rx="2" fill="#71717a"/>
+      <rect x="440" y="220" width="220" height="22" rx="4" fill="#0a0a0a"/>
+      <rect x="440" y="252" width="320" height="10" rx="3" fill="#a1a1aa"/>
+      <rect x="440" y="300" width="540" height="80" rx="12" fill="#ffffff" stroke="#e5e5e1" stroke-width="2"/>
+      <rect x="464" y="324" width="40" height="32" rx="7" fill="#f4f4f0"/>
+      <rect x="520" y="328" width="120" height="9" rx="2" fill="#0a0a0a"/>
+      <rect x="520" y="344" width="80" height="7" rx="2" fill="#a1a1aa"/>
+      <circle cx="720" cy="340" r="14" fill="#818cf8"/>
+      <circle cx="744" cy="340" r="14" fill="#fb923c" stroke="#ffffff" stroke-width="3"/>
+      <rect x="880" y="328" width="76" height="24" rx="6" fill="#0a0a0a"/>
+      <rect x="440" y="400" width="540" height="80" rx="12" fill="#eff0fa" stroke="#c7cbf2" stroke-width="2"/>
+      <rect x="464" y="424" width="40" height="32" rx="7" fill="#ffffff"/>
+      <rect x="520" y="428" width="160" height="9" rx="2" fill="#0a0a0a"/>
+      <rect x="520" y="444" width="100" height="7" rx="2" fill="#71717a"/>
+      <circle cx="720" cy="440" r="14" fill="#34d399"/>
+      <rect x="880" y="428" width="76" height="24" rx="6" fill="#5b5bd6"/>
+      <rect x="440" y="500" width="540" height="80" rx="12" fill="#ffffff" stroke="#e5e5e1" stroke-width="2"/>
+      <rect x="464" y="524" width="40" height="32" rx="7" fill="#f4f4f0"/>
+      <rect x="520" y="528" width="140" height="9" rx="2" fill="#0a0a0a"/>
+      <rect x="520" y="544" width="90" height="7" rx="2" fill="#a1a1aa"/>
+    </svg>
+  </template>
+
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="wf-kit.jsx"></script>
+  <script type="text/babel" src="pages.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>
