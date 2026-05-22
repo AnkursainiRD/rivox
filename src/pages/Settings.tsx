@@ -582,7 +582,21 @@ function IntegrationsTab({ user }: { user: User }) {
               </div>
             </div>
             {user.discord_id ? (
-              <span className="text-[10.5px] font-medium text-green-600 bg-surface-2 px-2.5 py-1 rounded-full">Linked</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10.5px] font-medium text-green-600 bg-surface-2 px-2.5 py-1 rounded-full">Linked</span>
+                <button
+                  onClick={async () => {
+                    if (!confirm("Disconnect your Discord account? You won't receive DM notifications.")) return;
+                    try {
+                      await api.post("/auth/discord/disconnect");
+                      window.location.reload();
+                    } catch { /* ignore */ }
+                  }}
+                  className="px-3 py-1.5 text-[12px] font-medium text-red-600 border border-red-200 dark:border-red-900 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                >
+                  Disconnect
+                </button>
+              </div>
             ) : (
               <button className="px-3 py-1.5 text-[12px] font-medium text-ink border border-border rounded-lg hover:bg-surface-2 transition-colors">Link Discord</button>
             )}

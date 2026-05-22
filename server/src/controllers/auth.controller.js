@@ -151,3 +151,15 @@ exports.getMe = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.disconnectDiscord = async (req, res, next) => {
+  try {
+    await User.update(
+      { discord_id: null, avatar_url: null },
+      { where: { id: req.user.id } }
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+};

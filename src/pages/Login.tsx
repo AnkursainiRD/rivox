@@ -5,7 +5,9 @@ import { api, setToken } from "../lib/api";
 import rivoxMark from "../assets/rivox-mark.svg";
 import rivoxMarkInverted from "../assets/rivox-mark-inverted.svg";
 
-const API_BASE = "http://localhost:3001/api";
+const API_BASE = import.meta.env.DEV
+  ? "http://localhost:3001/api"
+  : "https://rivox-cpbg.onrender.com/api";
 
 interface LoginPageProps {
   theme: "light" | "dark";

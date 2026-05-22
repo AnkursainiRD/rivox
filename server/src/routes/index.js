@@ -16,6 +16,7 @@ router.get("/auth/poll", authCtrl.pollSession);
 router.get("/auth/discord", authCtrl.discordRedirect);
 router.get("/auth/discord/callback", authCtrl.discordCallback);
 router.get("/auth/me", authCtrl.getMe);
+router.post("/auth/discord/disconnect", auth, authCtrl.disconnectDiscord);
 
 // ── All Users (admin only) ──────────────────────────────────
 router.get("/users", auth, async (req, res, next) => {
@@ -93,7 +94,7 @@ const sequelize = require("../db");
 const { QueryTypes } = require("sequelize");
 
 router.get("/integrations/discord/status", auth, async (req, res) => {
-  const rows = await sequelize.query("SELECT value FROM app_settings WHERE `key` = 'discord_channel_id'", { type: QueryTypes.SELECT });
+  const rows = await sequelize.query("SELECT value FROM app_settings WHERE key = 'discord_channel_id'", { type: QueryTypes.SELECT });
   res.json({
     bot_connected: !!process.env.DISCORD_BOT_TOKEN,
     channel_id: rows[0]?.value || null,
@@ -104,14 +105,15 @@ router.post("/integrations/discord/channel", auth, async (req, res) => {
   const { channel_id } = req.body;
   if (!channel_id) return res.status(400).json({ error: "channel_id required" });
   await sequelize.query(
-    "INSERT INTO app_settings (`key`, value) VALUES ('discord_channel_id', ?) ON DUPLICATE KEY UPDATE value = ?",
-    { replacements: [channel_id, channel_id] }
+    `INSERT INTO app_settings (key, value) VALUES ('discord_channel_id', :cid)
+     ON CONFLICT (key) DO UPDATE SET value = :cid`,
+    { replacements: { cid: channel_id } }
   );
   res.json({ ok: true });
 });
 
 router.post("/integrations/discord/test", auth, async (req, res) => {
-  const rows = await sequelize.query("SELECT value FROM app_settings WHERE `key` = 'discord_channel_id'", { type: QueryTypes.SELECT });
+  const rows = await sequelize.query("SELECT value FROM app_settings WHERE key = 'discord_channel_id'", { type: QueryTypes.SELECT });
   const channelId = rows[0]?.value;
   if (!channelId) return res.status(400).json({ error: "No channel configured" });
   const token = process.env.DISCORD_BOT_TOKEN;

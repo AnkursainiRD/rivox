@@ -35,10 +35,17 @@ export function useAuth() {
       setUser(data.user);
       setOrgs(data.organizations);
 
-      // Restore or pick first org
+      // Restore saved org, or auto-select if only one
       const savedOrgId = localStorage.getItem("rivox-active-org");
       const found = data.organizations.find((o) => o.id === savedOrgId);
-      setActiveOrg(found || data.organizations[0] || null);
+      if (found) {
+        setActiveOrg(found);
+      } else if (data.organizations.length === 1) {
+        setActiveOrg(data.organizations[0]);
+        localStorage.setItem("rivox-active-org", data.organizations[0].id);
+      } else {
+        setActiveOrg(null);
+      }
     } catch {
       clearToken();
       setUser(null);
