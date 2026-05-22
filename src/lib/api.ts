@@ -1,4 +1,6 @@
-const API_BASE = "http://localhost:3001/api";
+const API_BASE = import.meta.env.DEV
+  ? "http://localhost:3001/api"
+  : "https://rivox-cpbg.onrender.com/api";
 
 function getToken(): string | null {
   return localStorage.getItem("rivox-token");

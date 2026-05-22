@@ -33,10 +33,17 @@ const PORT = process.env.PORT || 3001;
 
 async function start() {
   await sequelize.authenticate();
-  console.log("MySQL connected via Sequelize");
+  console.log("Database connected via Sequelize");
 
   app.listen(PORT, () => {
     console.log(`Rivox API running on http://localhost:${PORT}`);
+
+    // Keep alive: self-ping every 14 minutes to prevent Render free tier sleep
+    if (process.env.RENDER_EXTERNAL_URL) {
+      setInterval(() => {
+        fetch(`${process.env.RENDER_EXTERNAL_URL}/api/health`).catch(() => {});
+      }, 14 * 60 * 1000);
+    }
   });
 }
 
