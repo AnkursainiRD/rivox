@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
-import { CreateOrg } from "./components/CreateOrg";
 import { ToastContainer } from "./components/ToastContainer";
 import rivoxMark from "./assets/rivox-mark.svg";
 import { useTheme } from "./hooks/useTheme";
