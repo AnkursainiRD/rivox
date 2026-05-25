@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
 
 /* ── Rivox Design System ── */
 

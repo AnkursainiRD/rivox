@@ -23,12 +23,37 @@ exports.listAll = async (req, res, next) => {
   try {
     const orgs = await sequelize.query(
       `SELECT o.id, o.name, o.slug, o.logo_url, o.created_at,
-              CASE WHEN om.user_id IS NOT NULL THEN true ELSE false END AS is_member
+              CASE WHEN my.user_id IS NOT NULL THEN true ELSE false END AS is_member,
+              my.role AS my_role,
+              CAST((SELECT COUNT(*) FROM org_members WHERE org_id = o.id) AS INTEGER) AS member_count,
+              CAST((SELECT COUNT(*) FROM api_keys WHERE org_id = o.id) AS INTEGER) AS key_count
        FROM organizations o
-       LEFT JOIN org_members om ON om.org_id = o.id AND om.user_id = :userId
+       LEFT JOIN org_members my ON my.org_id = o.id AND my.user_id = :userId
        ORDER BY o.created_at DESC`,
       { replacements: { userId: req.user.id }, type: QueryTypes.SELECT }
     );
+
+    // Fetch top 4 member avatars per org
+    const orgIds = orgs.map((o) => o.id);
+    if (orgIds.length > 0) {
+      const avatars = await sequelize.query(
+        `SELECT om.org_id, u.display_name, u.avatar_url
+         FROM org_members om JOIN users u ON u.id = om.user_id
+         WHERE om.org_id IN (:orgIds)
+         ORDER BY om.joined_at ASC`,
+        { replacements: { orgIds }, type: QueryTypes.SELECT }
+      );
+
+      const avatarMap = {};
+      for (const a of avatars) {
+        if (!avatarMap[a.org_id]) avatarMap[a.org_id] = [];
+        if (avatarMap[a.org_id].length < 4) avatarMap[a.org_id].push(a);
+      }
+      for (const org of orgs) {
+        org.members_preview = avatarMap[org.id] || [];
+      }
+    }
+
     res.json(orgs);
   } catch (err) {
     next(err);
