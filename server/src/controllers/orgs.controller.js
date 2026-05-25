@@ -16,6 +16,49 @@ exports.create = async (req, res, next) => {
   }
 };
 
+exports.listAll = async (req, res, next) => {
+  try {
+    const orgs = await Organization.findAll({ order: [["created_at", "DESC"]] });
+
+    // Check which orgs the current user is already a member of
+    const memberships = await OrgMember.findAll({
+      where: { user_id: req.user.id },
+      attributes: ["org_id"],
+    });
+    const memberOrgIds = new Set(memberships.map((m) => m.org_id));
+
+    const result = orgs.map((org) => ({
+      ...org.toJSON(),
+      is_member: memberOrgIds.has(org.id),
+    }));
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.joinOrg = async (req, res, next) => {
+  try {
+    const { orgId } = req.params;
+
+    const org = await Organization.findByPk(orgId);
+    if (!org) return res.status(404).json({ error: "Organization not found" });
+
+    // Check if already a member
+    const existing = await OrgMember.findOne({
+      where: { org_id: orgId, user_id: req.user.id },
+    });
+    if (existing) return res.status(400).json({ error: "Already a member" });
+
+    await OrgMember.create({ org_id: orgId, user_id: req.user.id, role: "employee" });
+
+    res.json({ ok: true, org });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.getById = async (req, res, next) => {
   try {
     const org = await Organization.findByPk(req.params.orgId);

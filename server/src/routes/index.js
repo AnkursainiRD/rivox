@@ -46,7 +46,9 @@ router.patch("/users/:userId/role", auth, async (req, res, next) => {
 });
 
 // ── Organizations ───────────────────────────────────────────
+router.get("/orgs", auth, orgsCtrl.listAll);
 router.post("/orgs", auth, orgsCtrl.create);
+router.post("/orgs/:orgId/join", auth, orgsCtrl.joinOrg);
 router.get("/orgs/:orgId", auth, orgsCtrl.getById);
 router.get("/orgs/:orgId/members", auth, orgsCtrl.getMembers);
 router.post("/orgs/:orgId/members", auth, requireRole("super_admin", "admin"), orgsCtrl.addMember);

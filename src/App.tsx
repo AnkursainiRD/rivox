@@ -1,7 +1,8 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { ToastContainer } from "./components/ToastContainer";
+import { api } from "./lib/api";
 import rivoxMark from "./assets/rivox-mark.svg";
 import { useTheme } from "./hooks/useTheme";
 import { useAuth } from "./hooks/useAuth";
@@ -105,10 +106,38 @@ function AuthenticatedApp({ auth, theme, toggle }: {
 
 const ORG_COLORS = ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#ef4444"];
 
+interface DiscoverOrg {
+  id: string;
+  name: string;
+  slug: string;
+  is_member: boolean;
+}
+
 function WorkspacePicker({ auth }: { auth: ReturnType<typeof useAuth> }) {
   const user = auth.user!;
   const canCreate = user.role === "super_admin" || user.role === "admin";
   const [filter, setFilter] = useState("");
+  const [allOrgs, setAllOrgs] = useState<DiscoverOrg[]>([]);
+  const [joining, setJoining] = useState<string | null>(null);
+
+  // Fetch all orgs when user has no orgs (for discovery)
+  useEffect(() => {
+    if (auth.orgs.length === 0) {
+      api.get<DiscoverOrg[]>("/orgs").then(setAllOrgs).catch(() => {});
+    }
+  }, [auth.orgs.length]);
+
+  const handleJoin = async (orgId: string) => {
+    setJoining(orgId);
+    try {
+      await api.post(`/orgs/${orgId}/join`);
+      window.location.reload();
+    } catch {
+      setJoining(null);
+    }
+  };
+
+  const availableOrgs = allOrgs.filter((o) => !o.is_member);
 
   const filtered = auth.orgs.filter((o) =>
     o.name.toLowerCase().includes(filter.toLowerCase()) ||
@@ -234,21 +263,54 @@ function WorkspacePicker({ auth }: { auth: ReturnType<typeof useAuth> }) {
               </div>
             </>
           ) : (
-            /* Empty state */
-            <div className="bg-surface border border-border rounded-2xl p-8 text-center mt-2">
-              <div className="w-14 h-14 rounded-2xl bg-accent-soft flex items-center justify-center mx-auto mb-4">
-                <svg width="24" height="24" fill="none" stroke="var(--color-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-                  <path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-                </svg>
-              </div>
-              <p className="text-[14px] font-medium text-ink mb-1">You're not in any workspace</p>
-              <p className="text-[12.5px] text-muted mb-5">Ask your admin to invite you, or join with an invite link.</p>
-              <button className="px-5 py-2.5 text-[13px] font-medium text-white bg-accent rounded-xl hover:opacity-90 transition-opacity inline-flex items-center gap-2">
-                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" strokeLinecap="round" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" strokeLinecap="round" /></svg>
-                Join with invite
-              </button>
-            </div>
+            <>
+              {/* Available orgs to join */}
+              {availableOrgs.length > 0 ? (
+                <>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted mb-2.5">Available workspaces</div>
+                  <div className="space-y-2.5">
+                    {availableOrgs.map((org, i) => {
+                      const color = ORG_COLORS[i % ORG_COLORS.length];
+                      return (
+                        <div key={org.id} className="bg-surface border border-border rounded-2xl overflow-hidden hover:border-accent/30 transition-colors">
+                          <div className="flex items-center gap-4 w-full px-5 py-[18px] text-left">
+                            <div className="w-12 h-12 rounded-[14px] flex items-center justify-center text-white font-bold text-[17px] shrink-0" style={{ background: color }}>
+                              {org.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[15px] font-semibold text-ink truncate">{org.name}</div>
+                              <div className="text-[12px] text-muted font-mono">@{org.slug}</div>
+                            </div>
+                            <button
+                              onClick={() => handleJoin(org.id)}
+                              disabled={joining === org.id}
+                              className="px-4 py-2 text-[12px] font-medium text-white bg-accent rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+                            >
+                              {joining === org.id ? (
+                                <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Joining...</>
+                              ) : (
+                                "Join"
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className="bg-surface border border-border rounded-2xl p-8 text-center mt-2">
+                  <div className="w-14 h-14 rounded-2xl bg-accent-soft flex items-center justify-center mx-auto mb-4">
+                    <svg width="24" height="24" fill="none" stroke="var(--color-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                      <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+                      <path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+                    </svg>
+                  </div>
+                  <p className="text-[14px] font-medium text-ink mb-1">No workspaces available</p>
+                  <p className="text-[12.5px] text-muted">Ask your admin to create one and invite you.</p>
+                </div>
+              )}
+            </>
           )}
 
           {/* New workspace */}
@@ -339,21 +401,43 @@ function WorkspacePicker({ auth }: { auth: ReturnType<typeof useAuth> }) {
               </div>
             </>
           ) : (
-            /* Empty state */
-            <div className="bg-white dark:bg-surface border border-border rounded-2xl p-8 text-center shadow-sm">
-              <div className="w-14 h-14 rounded-2xl bg-accent-soft flex items-center justify-center mx-auto mb-4">
-                <svg width="24" height="24" fill="none" stroke="var(--color-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-                  <path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-                </svg>
-              </div>
-              <p className="text-[14px] font-medium text-ink mb-1">You're not in any workspace</p>
-              <p className="text-[12.5px] text-muted mb-5">Ask your admin to invite you, or join with an invite link.</p>
-              <button className="px-5 py-2.5 text-[13px] font-medium text-white bg-accent rounded-xl hover:opacity-90 transition-opacity inline-flex items-center gap-2">
-                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" strokeLinecap="round" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" strokeLinecap="round" /></svg>
-                Join with invite
-              </button>
-            </div>
+            <>
+              {availableOrgs.length > 0 ? (
+                <div className="bg-white dark:bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">Available workspaces · {availableOrgs.length}</span>
+                  </div>
+                  <div className="divide-y divide-border">
+                    {availableOrgs.map((org, i) => {
+                      const color = ORG_COLORS[i % ORG_COLORS.length];
+                      return (
+                        <div key={org.id} className="flex items-center gap-4 px-5 py-[18px]">
+                          <div className="w-12 h-12 rounded-[14px] flex items-center justify-center text-white font-bold text-[17px] shrink-0" style={{ background: color }}>
+                            {org.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[15px] font-semibold text-ink truncate">{org.name}</div>
+                            <div className="text-[12px] text-muted font-mono">@{org.slug}</div>
+                          </div>
+                          <button
+                            onClick={() => handleJoin(org.id)}
+                            disabled={joining === org.id}
+                            className="px-4 py-2 text-[12px] font-medium text-white bg-accent rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0"
+                          >
+                            {joining === org.id ? "Joining..." : "Join"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-surface border border-border rounded-2xl p-8 text-center shadow-sm">
+                  <p className="text-[14px] font-medium text-ink mb-1">No workspaces available</p>
+                  <p className="text-[12.5px] text-muted">Ask your admin to create one and invite you.</p>
+                </div>
+              )}
+            </>
           )}
 
           {/* Help link */}
