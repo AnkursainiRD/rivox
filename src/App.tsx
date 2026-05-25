@@ -123,7 +123,7 @@ function WorkspacePicker({ auth }: { auth: ReturnType<typeof useAuth> }) {
   // Fetch all orgs when user has no orgs (for discovery)
   useEffect(() => {
     if (auth.orgs.length === 0) {
-      api.get<DiscoverOrg[]>("/orgs").then(setAllOrgs).catch(() => {});
+      api.get<DiscoverOrg[]>("/orgs").then(setAllOrgs).catch((err) => console.error("Failed to fetch orgs:", err));
     }
   }, [auth.orgs.length]);
 

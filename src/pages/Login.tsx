@@ -41,11 +41,15 @@ export function LoginPage({ theme, onToggleTheme, onTokenFound }: LoginPageProps
   useEffect(() => {
     if (!waiting || !sessionRef.current) return;
 
+    let failures = 0;
+    const MAX_FAILURES = 120; // stop after 2 minutes of continuous failures
+
     pollRef.current = setInterval(async () => {
       try {
         const res = await api.get<{ status: string; token?: string }>(
           `/auth/poll?session=${sessionRef.current}`
         );
+        failures = 0; // reset on success
         if (res.status === "done" && res.token) {
           clearInterval(pollRef.current);
           setToken(res.token);
@@ -53,9 +57,13 @@ export function LoginPage({ theme, onToggleTheme, onTokenFound }: LoginPageProps
           onTokenFound();
         }
       } catch {
-        // session expired or error — stop polling
-        clearInterval(pollRef.current);
-        setWaiting(false);
+        failures++;
+        // Only stop after many consecutive failures (not a single one)
+        if (failures >= MAX_FAILURES) {
+          clearInterval(pollRef.current);
+          setWaiting(false);
+          setError("Login timed out. Please try again.");
+        }
       }
     }, 1000);
 

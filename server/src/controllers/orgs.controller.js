@@ -1,4 +1,7 @@
 const { Organization, User, OrgMember } = require("../models");
+const sequelize = require("../db");
+const { QueryTypes } = require("sequelize");
+const { v4: uuidv4 } = require("uuid");
 const { logActivity } = require("../utils/log");
 
 exports.create = async (req, res, next) => {
@@ -18,21 +21,15 @@ exports.create = async (req, res, next) => {
 
 exports.listAll = async (req, res, next) => {
   try {
-    const orgs = await Organization.findAll({ order: [["created_at", "DESC"]] });
-
-    // Check which orgs the current user is already a member of
-    const memberships = await OrgMember.findAll({
-      where: { user_id: req.user.id },
-      attributes: ["org_id"],
-    });
-    const memberOrgIds = new Set(memberships.map((m) => m.org_id));
-
-    const result = orgs.map((org) => ({
-      ...org.toJSON(),
-      is_member: memberOrgIds.has(org.id),
-    }));
-
-    res.json(result);
+    const orgs = await sequelize.query(
+      `SELECT o.id, o.name, o.slug, o.logo_url, o.created_at,
+              CASE WHEN om.user_id IS NOT NULL THEN true ELSE false END AS is_member
+       FROM organizations o
+       LEFT JOIN org_members om ON om.org_id = o.id AND om.user_id = :userId
+       ORDER BY o.created_at DESC`,
+      { replacements: { userId: req.user.id }, type: QueryTypes.SELECT }
+    );
+    res.json(orgs);
   } catch (err) {
     next(err);
   }
@@ -42,16 +39,22 @@ exports.joinOrg = async (req, res, next) => {
   try {
     const { orgId } = req.params;
 
-    const org = await Organization.findByPk(orgId);
+    const [org] = await sequelize.query(
+      "SELECT * FROM organizations WHERE id = :orgId",
+      { replacements: { orgId }, type: QueryTypes.SELECT }
+    );
     if (!org) return res.status(404).json({ error: "Organization not found" });
 
-    // Check if already a member
-    const existing = await OrgMember.findOne({
-      where: { org_id: orgId, user_id: req.user.id },
-    });
+    const [existing] = await sequelize.query(
+      "SELECT id FROM org_members WHERE org_id = :orgId AND user_id = :userId",
+      { replacements: { orgId, userId: req.user.id }, type: QueryTypes.SELECT }
+    );
     if (existing) return res.status(400).json({ error: "Already a member" });
 
-    await OrgMember.create({ org_id: orgId, user_id: req.user.id, role: "employee" });
+    await sequelize.query(
+      "INSERT INTO org_members (id, org_id, user_id, role) VALUES (:id, :orgId, :userId, 'employee')",
+      { replacements: { id: uuidv4(), orgId, userId: req.user.id } }
+    );
 
     res.json({ ok: true, org });
   } catch (err) {

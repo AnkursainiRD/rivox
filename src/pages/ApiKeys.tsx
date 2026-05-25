@@ -5,6 +5,37 @@ import {
 } from "lucide-react";
 import { api } from "../lib/api";
 
+async function copyToClipboard(text: string): Promise<void> {
+  // 1. Tauri clipboard plugin (works on all desktop platforms)
+  try {
+    const { writeText } = await import("@tauri-apps/plugin-clipboard-manager");
+    await writeText(text);
+    return;
+  } catch { /* not in Tauri or plugin failed */ }
+
+  // 2. Clipboard API (needs HTTPS or localhost)
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch { /* permission denied or not available */ }
+  }
+
+  // 3. execCommand fallback (works in most webviews)
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
 interface ApiKey {
   id: string;
   name: string;
@@ -45,34 +76,7 @@ function CopyKeyButton({ keyId }: { keyId: string }) {
     try {
       const { value } = await api.get<{ value: string }>(`/keys/${keyId}/value`);
 
-      // Try Tauri clipboard first
-      let copied = false;
-      try {
-        const { writeText } = await import("@tauri-apps/plugin-clipboard-manager");
-        await writeText(value);
-        copied = true;
-      } catch {
-        // Not in Tauri or plugin not available
-      }
-
-      // Fallback to browser clipboard
-      if (!copied) {
-        try {
-          await navigator.clipboard.writeText(value);
-          copied = true;
-        } catch {
-          // Fallback to execCommand
-          const textarea = document.createElement("textarea");
-          textarea.value = value;
-          textarea.style.position = "fixed";
-          textarea.style.opacity = "0";
-          document.body.appendChild(textarea);
-          textarea.select();
-          document.execCommand("copy");
-          document.body.removeChild(textarea);
-          copied = true;
-        }
-      }
+      await copyToClipboard(value);
 
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
