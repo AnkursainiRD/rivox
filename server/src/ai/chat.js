@@ -6,6 +6,7 @@ const { createTools } = require("./tools");
 
 async function handleChat(req, res) {
   const { messages, orgId } = req.body;
+  if (!orgId) console.warn("[Chat] WARNING: no orgId provided!");
   const tools = createTools(orgId, req.user.id);
 
   const result = await streamText({

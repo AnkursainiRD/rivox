@@ -200,7 +200,7 @@ export function AISideRail({ onClose, onNavigate, userName, orgId }: {
                 Live
               </span>
             </div>
-            <div className="text-[11.5px] text-muted mt-0.5">Powered by Claude · scoped to your workspace</div>
+            <div className="text-[11.5px] text-muted mt-0.5">Powered by Rivox · scoped to your workspace</div>
           </div>
           <button onClick={() => setMessages([])} className="w-7 h-7 rounded-[7px] flex items-center justify-center text-muted hover:text-ink hover:bg-surface-2 transition-colors" title="Clear">
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M5 6v14a2 2 0 002 2h10a2 2 0 002-2V6" strokeLinecap="round" strokeLinejoin="round" /></svg>

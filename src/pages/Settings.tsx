@@ -343,12 +343,72 @@ function NotificationsTab() {
    ══════════════════════════════════════════════════════════════════════════ */
 
 function AppearanceTab({ theme, onToggle }: { theme: "light" | "dark"; onToggle: () => void }) {
+  const accentColors = [
+    { name: "Default", value: "#5b5bd6", soft: "#eeeefb" },
+    { name: "Blue", value: "#3b82f6", soft: "#dbeafe" },
+    { name: "Emerald", value: "#10b981", soft: "#dcfce7" },
+    { name: "Rose", value: "#f43f5e", soft: "#ffe4e6" },
+    { name: "Amber", value: "#f59e0b", soft: "#fef3c7" },
+    { name: "Purple", value: "#8b5cf6", soft: "#ede9fe" },
+    { name: "Cyan", value: "#06b6d4", soft: "#cffafe" },
+    { name: "Pink", value: "#ec4899", soft: "#fce7f3" },
+  ];
+
+  const [activeAccent, setActiveAccent] = useState(
+    () => getComputedStyle(document.documentElement).getPropertyValue("--color-accent").trim() || "#5b5bd6"
+  );
+
+  const [fontSize, setFontSize] = useState(
+    () => localStorage.getItem("rivox-font-size") || "default"
+  );
+
+  const [sidebarDensity, setSidebarDensity] = useState(
+    () => localStorage.getItem("rivox-sidebar-density") || "default"
+  );
+
+  const [borderRadius, setBorderRadius] = useState(
+    () => localStorage.getItem("rivox-radius") || "default"
+  );
+
+  const applyAccent = (color: string, soft: string) => {
+    document.documentElement.style.setProperty("--color-accent", color);
+    document.documentElement.style.setProperty("--color-accent-soft", soft);
+    localStorage.setItem("rivox-accent", color);
+    localStorage.setItem("rivox-accent-soft", soft);
+    setActiveAccent(color);
+  };
+
+  const applyFontSize = (size: string) => {
+    const root = document.documentElement;
+    root.classList.remove("text-sm", "text-base", "text-lg");
+    if (size === "compact") root.style.fontSize = "14px";
+    else if (size === "large") root.style.fontSize = "16.5px";
+    else root.style.fontSize = "";
+    localStorage.setItem("rivox-font-size", size);
+    setFontSize(size);
+  };
+
+  const applySidebarDensity = (density: string) => {
+    localStorage.setItem("rivox-sidebar-density", density);
+    setSidebarDensity(density);
+  };
+
+  const applyBorderRadius = (radius: string) => {
+    const root = document.documentElement;
+    if (radius === "sharp") root.style.setProperty("--radius-card", "6px");
+    else if (radius === "round") root.style.setProperty("--radius-card", "16px");
+    else root.style.removeProperty("--radius-card");
+    localStorage.setItem("rivox-radius", radius);
+    setBorderRadius(radius);
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-10 py-8">
       <h2 className="text-[17px] font-semibold text-ink tracking-tight mb-0.5">Appearance</h2>
       <p className="text-[13px] text-muted mb-6">Customize the look and feel of Rivox.</p>
 
-      <div className="bg-surface border border-border rounded-xl p-6">
+      {/* Theme */}
+      <div className="bg-surface border border-border rounded-xl p-6 mb-4">
         <h3 className="text-[13px] font-semibold text-ink mb-4">Theme</h3>
         <div className="grid grid-cols-2 gap-4">
           <button onClick={() => { if (theme === "dark") onToggle(); }}
@@ -383,6 +443,81 @@ function AppearanceTab({ theme, onToggle }: { theme: "light" | "dark"; onToggle:
               {theme === "dark" && <CheckCircle size={13} className="text-accent ml-auto" />}
             </div>
           </button>
+        </div>
+      </div>
+
+      {/* Accent Color */}
+      <div className="bg-surface border border-border rounded-xl p-6 mb-4">
+        <h3 className="text-[13px] font-semibold text-ink mb-1">Accent color</h3>
+        <p className="text-[12px] text-muted mb-4">Applied to buttons, links, badges, and focus rings.</p>
+        <div className="flex flex-wrap gap-2.5">
+          {accentColors.map((c) => (
+            <button key={c.value} onClick={() => applyAccent(c.value, c.soft)}
+              className={`w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center ${activeAccent === c.value ? "border-ink scale-110" : "border-transparent hover:scale-105"}`}
+              style={{ background: c.value }}
+              title={c.name}
+            >
+              {activeAccent === c.value && (
+                <svg width="14" height="14" fill="none" stroke="#fff" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Font Size */}
+      <div className="bg-surface border border-border rounded-xl p-6 mb-4">
+        <h3 className="text-[13px] font-semibold text-ink mb-1">Interface scale</h3>
+        <p className="text-[12px] text-muted mb-4">Adjust the overall text and element size.</p>
+        <div className="inline-flex bg-surface-2 border border-border rounded-lg p-0.5">
+          {[
+            { key: "compact", label: "Compact", size: "text-[11px]" },
+            { key: "default", label: "Default", size: "text-[13px]" },
+            { key: "large", label: "Large", size: "text-[15px]" },
+          ].map((opt) => (
+            <button key={opt.key} onClick={() => applyFontSize(opt.key)}
+              className={`px-4 py-2 rounded-md text-[12.5px] font-medium transition-all ${fontSize === opt.key ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}>
+              <span className={opt.size}>A</span>
+              <span className="ml-1.5">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sidebar Density */}
+      <div className="bg-surface border border-border rounded-xl p-6 mb-4">
+        <h3 className="text-[13px] font-semibold text-ink mb-1">Sidebar density</h3>
+        <p className="text-[12px] text-muted mb-4">Control spacing between sidebar items.</p>
+        <div className="inline-flex bg-surface-2 border border-border rounded-lg p-0.5">
+          {[
+            { key: "compact", label: "Compact" },
+            { key: "default", label: "Default" },
+            { key: "spacious", label: "Spacious" },
+          ].map((opt) => (
+            <button key={opt.key} onClick={() => applySidebarDensity(opt.key)}
+              className={`px-4 py-2 rounded-md text-[12.5px] font-medium transition-all ${sidebarDensity === opt.key ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Border Radius */}
+      <div className="bg-surface border border-border rounded-xl p-6">
+        <h3 className="text-[13px] font-semibold text-ink mb-1">Corner radius</h3>
+        <p className="text-[12px] text-muted mb-4">Card and button roundness.</p>
+        <div className="inline-flex bg-surface-2 border border-border rounded-lg p-0.5">
+          {[
+            { key: "sharp", label: "Sharp", preview: "rounded" },
+            { key: "default", label: "Default", preview: "rounded-lg" },
+            { key: "round", label: "Round", preview: "rounded-2xl" },
+          ].map((opt) => (
+            <button key={opt.key} onClick={() => applyBorderRadius(opt.key)}
+              className={`px-4 py-2 rounded-md text-[12.5px] font-medium transition-all flex items-center gap-2 ${borderRadius === opt.key ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}>
+              <div className={`w-5 h-5 border-2 border-current ${opt.preview}`} />
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
     </div>
