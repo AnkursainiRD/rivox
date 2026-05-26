@@ -78,6 +78,7 @@ exports.getById = async (req, res, next) => {
   try {
     const issue = await Issue.findByPk(req.params.issueId, {
       include: [
+        { model: Channel, as: "channel", attributes: ["id", "name", "color"] },
         { model: User, as: "reporter", attributes: ["id", "username", "display_name", "avatar_url"] },
         { model: User, as: "assignee", attributes: ["id", "username", "display_name", "avatar_url"] },
         { model: Group, as: "assignedGroup", attributes: ["id", "name", "color"] },

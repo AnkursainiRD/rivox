@@ -17,6 +17,8 @@ server/.env
 /Rivox *.html
 /v3 *.html
 Rivox-branding/*.html
+project-design-branding/
+B _ Split _ brand panel _ searchable list.html
 dist
 dist-ssr
 *.local

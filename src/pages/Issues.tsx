@@ -1669,11 +1669,6 @@ function PersonPicker({ value, orgMembers, onChange }: {
               Assign
             </span>)}
       </button>
-      {value && (
-        <button onClick={(e) => { e.stopPropagation(); onChange(null); }} className="text-muted/40 hover:text-red-500 transition-colors ml-1" title="Remove assignee">
-          <X size={12} />
-        </button>
-      )}
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
@@ -1764,7 +1759,7 @@ function ChannelPicker({ value, channels, onChange }: {
             const r = ref.current.getBoundingClientRect();
             const dropH = (channels.length + 1) * 32 + 8;
             const fitsBelow = r.bottom + dropH + 8 < window.innerHeight;
-            const left = Math.min(r.left, window.innerWidth - 180);
+            const left = Math.min(r.right - 176, window.innerWidth - 184);
             setPos(fitsBelow ? { top: r.bottom + 2, left } : { bottom: window.innerHeight - r.top + 2, left });
           }
           setOpen(!open);
@@ -2255,11 +2250,26 @@ export function IssueDetailPage({ orgId, userId }: { orgId?: string; userId?: st
 
   const update = async (field: string, value: string | null) => {
     if (!issue) return;
-    // Optimistic update
-    setIssue((prev) => prev ? { ...prev, [field]: value } : prev);
+    // Optimistic update — also update nested objects for pickers
+    setIssue((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, [field]: value };
+      if (field === "channel_id") {
+        const ch = channels.find((c) => c.id === value);
+        updated.channel = ch ? { id: ch.id, name: ch.name, color: ch.color || "#5b5bd6" } : null;
+      }
+      if (field === "assigned_to") {
+        updated.assignee = value ? (orgMembers.find((m) => m.user.id === value)?.user || null) : null;
+      }
+      if (field === "assigned_group") {
+        const g = groups.find((gr) => gr.id === value);
+        updated.assignedGroup = g ? { id: g.id, name: g.name, color: g.color || "#5b5bd6" } : null;
+      }
+      return updated;
+    });
     try {
       await api.patch(`/issues/${issue.id}`, { [field]: value });
-      // Silently refetch for nested data without loading state
+      // Silently refetch for full nested data
       const data = await api.get<Issue>(`/issues/${issue.id}`);
       setIssue(data);
     } catch {
@@ -2573,10 +2583,23 @@ export function IssueDetailPage({ orgId, userId }: { orgId?: string; userId?: st
             <div className="text-[10px] font-bold text-muted uppercase tracking-[0.08em] mb-3">
               Subscribers · {[issue.assignee, reporter].filter(Boolean).length}
             </div>
-            <div className="flex items-center -space-x-1.5">
-              {issue.assignee && <div className="ring-2 ring-surface rounded-full"><Avatar user={issue.assignee} size={26} /></div>}
-              {reporter && <div className="ring-2 ring-surface rounded-full"><Avatar user={reporter} size={26} /></div>}
-              <button className="w-[26px] h-[26px] rounded-full bg-surface-2 border border-border flex items-center justify-center text-muted hover:text-ink text-[11px] ring-2 ring-surface ml-0.5">+</button>
+            <div className="flex flex-col gap-1.5">
+              {issue.assignee && (
+                <div className="flex items-center gap-2 group/sub">
+                  <Avatar user={issue.assignee} size={22} />
+                  <span className="text-[11.5px] text-ink flex-1 truncate">{issue.assignee.display_name || issue.assignee.username}</span>
+                  <button onClick={() => update("assigned_to", null)} className="text-muted/0 group-hover/sub:text-muted hover:!text-red-500 transition-colors" title="Remove">
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+              {reporter && (
+                <div className="flex items-center gap-2">
+                  <Avatar user={reporter} size={22} />
+                  <span className="text-[11.5px] text-ink flex-1 truncate">{reporter.display_name || reporter.username}</span>
+                  <span className="text-[10px] text-muted">Reporter</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
