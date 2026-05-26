@@ -42,7 +42,7 @@ interface OrgMemberData {
   };
 }
 
-export function TeamPage({ orgId: _orgId }: { orgId?: string }) {
+export function TeamPage({ orgId: _orgId, userId: currentUserId }: { orgId?: string; userId?: string }) {
   const [] = useState<View>("groups");
   const [groups, setGroups] = useState<GroupData[]>([]);
   const [orgMembers, setOrgMembers] = useState<OrgMemberData[]>([]);
@@ -106,7 +106,7 @@ export function TeamPage({ orgId: _orgId }: { orgId?: string }) {
           <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
         </div>
       ) : (
-        <GroupsView groups={groups} orgId={_orgId} orgMembers={orgMembers} onRefresh={fetchData} onMembersChange={setOrgMembers} showCreateGroup={showCreateGroup} setShowCreateGroup={setShowCreateGroup} />
+        <GroupsView groups={groups} orgId={_orgId} orgMembers={orgMembers} onRefresh={fetchData} onMembersChange={setOrgMembers} showCreateGroup={showCreateGroup} setShowCreateGroup={setShowCreateGroup} currentUserId={currentUserId} />
       )}
     </div>
   );
@@ -223,7 +223,7 @@ function CreateGroupPanel({ orgId, onClose, onCreated, orgMembers }: { orgId: st
                           {(om.user.display_name || om.user.username).split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         <p className="text-[12px] font-medium text-ink truncate">{om.user.display_name || om.user.username}</p>
                         <p className="text-[10px] text-muted truncate">{om.user.email}</p>
                       </div>
@@ -250,7 +250,7 @@ function CreateGroupPanel({ orgId, onClose, onCreated, orgMembers }: { orgId: st
 
 /* ── Groups View ── */
 
-function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersChange, showCreateGroup, setShowCreateGroup }: { groups: GroupData[]; orgId: string; orgMembers: OrgMemberData[]; onRefresh: () => void; onMembersChange: (m: OrgMemberData[]) => void; showCreateGroup: boolean; setShowCreateGroup: (v: boolean) => void }) {
+function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersChange, showCreateGroup, setShowCreateGroup, currentUserId }: { groups: GroupData[]; orgId: string; orgMembers: OrgMemberData[]; onRefresh: () => void; onMembersChange: (m: OrgMemberData[]) => void; showCreateGroup: boolean; setShowCreateGroup: (v: boolean) => void; currentUserId?: string }) {
   const [selectedGroup, setSelectedGroup] = useState(0);
   const [members, setMembers] = useState<MemberData[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -298,9 +298,9 @@ function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersCha
   }
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden">
+    <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
       {/* Left: Group list */}
-      <div className="w-[380px] shrink-0 border-r border-border overflow-y-auto">
+      <div className="w-full md:w-[380px] shrink-0 border-b md:border-b-0 md:border-r border-border overflow-y-auto max-h-[40vh] md:max-h-none">
         <div className="px-6 py-3">
           <span className="text-[10.5px] font-semibold text-muted uppercase tracking-widest">Groups</span>
         </div>
@@ -319,13 +319,8 @@ function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersCha
                   style={{ backgroundColor: g.color || "#5b5bd6" }}>
                   {g.name[0]}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-[14px] font-semibold text-ink">{g.name}</p>
-                    <span className="px-1.5 py-0.5 bg-surface-2 border border-border text-[10px] font-medium text-muted rounded">
-                      {g.member_count > 5 ? "Engineer" : g.member_count > 3 ? "Designer" : "Viewer"}
-                    </span>
-                  </div>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <p className="text-[14px] font-semibold text-ink truncate">{g.name}</p>
                   <p className="text-[11.5px] text-muted mt-0.5 truncate">{g.description || "No description"}</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
@@ -443,7 +438,7 @@ function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersCha
           {(showAddMember || showEdit || showCreateGroup || showPermissions) && (
             <div className="absolute inset-0 z-20 flex justify-end">
               <div className="absolute inset-0 bg-ink/10 backdrop-blur-[3px]" onClick={() => { setShowAddMember(false); setShowEdit(false); setShowCreateGroup(false); setShowPermissions(false); }} />
-              <div className={`relative ${showPermissions ? "w-full" : "w-[360px]"} h-full bg-surface border-l border-border shadow-popover flex flex-col animate-slide-in`}>
+              <div className={`relative ${showPermissions ? "w-full" : "w-full md:w-[360px]"} h-full bg-surface border-l border-border shadow-popover flex flex-col animate-slide-in`}>
                 {/* Permissions panel — full width */}
                 {showPermissions && (
                   <PermissionsPanel groups={groups} onClose={() => setShowPermissions(false)} />
@@ -542,19 +537,18 @@ function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersCha
                             {(m.user.display_name || m.user.username).split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-medium text-ink">{m.user.display_name || m.user.username}</p>
-                          <p className="text-[11.5px] text-muted">{m.user.email}</p>
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <p className="text-[13px] font-medium text-ink truncate">{m.user.display_name || m.user.username}</p>
+                          <p className="text-[11.5px] text-muted truncate">{m.user.email}</p>
                         </div>
-                        <span className="text-[12px] text-ink px-2.5 py-1 border border-border rounded-btn-sm">
-                          {role === "super_admin" ? "Admin" : role.charAt(0).toUpperCase() + role.slice(1)} ▾
+                        <span className={`text-[12px] text-ink px-2.5 py-1 border border-border rounded-btn-sm shrink-0 whitespace-nowrap ${m.user.id === currentUserId ? "" : "cursor-pointer"}`}>
+                          {role === "super_admin" ? "Admin" : role.charAt(0).toUpperCase() + role.slice(1)} {m.user.id !== currentUserId && "▾"}
                         </span>
-                        <MemberMenu
+                        {m.user.id !== currentUserId && <MemberMenu
                           currentRole={role}
                           onChangeRole={async (newRole) => {
                             try {
                               await api.patch(`/orgs/${_orgId}/members/${m.user.id}`, { role: newRole });
-                              // Update locally without full page reload
                               onMembersChange(orgMembers.map((om) =>
                                 om.user.id === m.user.id ? { ...om, role: newRole } : om
                               ));
@@ -566,7 +560,7 @@ function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersCha
                             onRefresh();
                           }}
                           memberName={m.user.display_name || m.user.username}
-                        />
+                        />}
                       </div>
                     );
                   })}
@@ -858,7 +852,7 @@ function AddMemberModal({ groupId, orgMembers, existingMembers, onClose, onAdded
                   {(om.user.display_name || om.user.username).split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
               )}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
                 <p className="text-[13px] font-medium text-ink">{om.user.display_name || om.user.username}</p>
                 <p className="text-[11px] text-muted">{om.user.email}</p>
               </div>

@@ -170,7 +170,7 @@ export function ApiKeysPage({ orgId, userId }: { orgId?: string; userId?: string
 
         <div className="flex flex-1 min-h-0">
           {/* Left: key list */}
-          <div className="w-[260px] shrink-0 border-r border-border bg-surface flex flex-col">
+          <div className="hidden md:flex w-[260px] shrink-0 border-r border-border bg-surface flex-col">
             <div className="flex items-center justify-between px-4 py-2.5">
               <span className="text-[10.5px] font-semibold text-muted uppercase tracking-widest">All keys · {keys.length}</span>
               <span className="text-[11px] text-muted">↕ sort</span>
@@ -253,7 +253,7 @@ export function ApiKeysPage({ orgId, userId }: { orgId?: string; userId?: string
       </div>
 
       {/* Stat strip */}
-      <div className="grid grid-cols-4 gap-2.5 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
         {[
           { label: "Total keys", value: String(keys.length), detail: "+1 this week" },
           { label: "In production", value: String(keys.filter((k) => k.environment === "prod").length), detail: "monitored", accent: true },
@@ -400,8 +400,14 @@ export function ApiKeysPage({ orgId, userId }: { orgId?: string; userId?: string
                   <SharePopover
                     apiKey={k}
                     orgId={orgId}
-                    onClose={() => { setShareKeyId(null); fetchKeys(); }}
-                    onChanged={fetchKeys}
+                    onClose={() => setShareKeyId(null)}
+                    onChanged={async () => {
+                      // Refresh only this key's data instead of all keys
+                      try {
+                        const updated = await api.get<typeof k>(`/keys/${k.id}`);
+                        setKeys((prev) => prev.map((key) => key.id === k.id ? { ...key, ...updated } : key));
+                      } catch { /* fallback to full refresh */ fetchKeys(); }
+                    }}
                   />
                 )}
               </div>
@@ -438,7 +444,7 @@ function SharePopover({ apiKey, onClose, orgId, onChanged }: { apiKey: ApiKey; o
   useEffect(() => {
     if (!inviteInput.trim()) { setSearchResults([]); setShowResults(false); return; }
     const q = inviteInput.toLowerCase();
-    const existingUserIds = new Set(detail?.sharedUsers?.map((u) => u.id) || []);
+    const existingUserIds = new Set([...(detail?.sharedUsers?.map((u) => u.id) || []), detail?.creator?.id].filter(Boolean));
     const existingGroupIds = new Set(detail?.sharedGroups?.map((g) => g.id) || []);
     let cancelled = false;
     (async () => {
@@ -460,6 +466,12 @@ function SharePopover({ apiKey, onClose, orgId, onChanged }: { apiKey: ApiKey; o
   }, [inviteInput, orgId, detail]);
 
   const invite = async (r: (typeof searchResults)[0]) => {
+    // Can't share with yourself
+    if (r.type === "user" && r.id === detail?.creator?.id) return;
+    // Can't share with someone who already has access
+    if (r.type === "user" && detail?.sharedUsers?.some((u) => u.id === r.id)) return;
+    if (r.type === "group" && detail?.sharedGroups?.some((g) => g.id === r.id)) return;
+
     if (r.type === "user") await api.post(`/keys/${apiKey.id}/share/user`, { user_id: r.id, permission: invitePerm });
     else await api.post(`/keys/${apiKey.id}/share/group`, { group_id: r.id, permission: invitePerm });
     setInviteInput("");
@@ -468,17 +480,46 @@ function SharePopover({ apiKey, onClose, orgId, onChanged }: { apiKey: ApiKey; o
     onChanged?.();
   };
 
+  const [updatingPerm, setUpdatingPerm] = useState<string | null>(null);
+
   const toggleUserPermission = async (userId: string, current: string) => {
     const newPerm = current === "view" ? "manage" : "view";
-    await api.post(`/keys/${apiKey.id}/share/user`, { user_id: userId, permission: newPerm });
-    fetchDetail();
-    onChanged?.();
+    // Optimistic update
+    setUpdatingPerm(userId);
+    setDetail((prev) => prev ? {
+      ...prev,
+      sharedUsers: prev.sharedUsers?.map((u) =>
+        u.id === userId ? { ...u, ApiKeyUserAccess: { ...u.ApiKeyUserAccess, permission: newPerm } } : u
+      ),
+    } : prev);
+    try {
+      await api.post(`/keys/${apiKey.id}/share/user`, { user_id: userId, permission: newPerm });
+      onChanged?.();
+    } catch {
+      // Revert on error
+      fetchDetail();
+    } finally {
+      setUpdatingPerm(null);
+    }
   };
 
   const toggleGroupPermission = async (groupId: string, current: string) => {
     const newPerm = current === "view" ? "manage" : "view";
-    await api.post(`/keys/${apiKey.id}/share/group`, { group_id: groupId, permission: newPerm });
-    fetchDetail();
+    setUpdatingPerm(groupId);
+    setDetail((prev) => prev ? {
+      ...prev,
+      sharedGroups: prev.sharedGroups?.map((g) =>
+        g.id === groupId ? { ...g, ApiKeyGroupAccess: { ...g.ApiKeyGroupAccess, permission: newPerm } } : g
+      ),
+    } : prev);
+    try {
+      await api.post(`/keys/${apiKey.id}/share/group`, { group_id: groupId, permission: newPerm });
+      onChanged?.();
+    } catch {
+      fetchDetail();
+    } finally {
+      setUpdatingPerm(null);
+    }
     onChanged?.();
   };
 
@@ -526,7 +567,7 @@ function SharePopover({ apiKey, onClose, orgId, onChanged }: { apiKey: ApiKey; o
                       {r.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                     </div>
                   )}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <p className="text-[12px] font-medium text-ink truncate">{r.name}</p>
                     <p className="text-[10px] text-muted truncate">{r.email}</p>
                   </div>
@@ -548,7 +589,7 @@ function SharePopover({ apiKey, onClose, orgId, onChanged }: { apiKey: ApiKey; o
                   {detail.creator.username.slice(0, 2).toUpperCase()}
                 </div>
               )}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
                 <p className="text-[12.5px] font-medium text-ink">{detail.creator.username}</p>
                 <p className="text-[11px] text-muted">Key owner</p>
               </div>
@@ -566,15 +607,42 @@ function SharePopover({ apiKey, onClose, orgId, onChanged }: { apiKey: ApiKey; o
                   {(u.display_name || u.username).split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
               )}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
                 <p className="text-[12.5px] font-medium text-ink">{u.display_name || u.username}</p>
                 <p className="text-[11px] text-muted">{u.username}</p>
               </div>
               <button
                 onClick={() => toggleUserPermission(u.id, u.ApiKeyUserAccess?.permission || "view")}
-                className="text-[11.5px] text-ink px-2 py-0.5 rounded border border-border hover:bg-surface-2 transition-colors"
+                disabled={updatingPerm === u.id}
+                className="text-[11.5px] text-ink px-2 py-0.5 rounded border border-border hover:bg-surface-2 transition-all shrink-0 disabled:opacity-50"
               >
-                Can {u.ApiKeyUserAccess?.permission || "view"} ▾
+                {updatingPerm === u.id ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-3 h-3 border-[1.5px] border-accent/30 border-t-accent rounded-full animate-spin" />
+                    Updating
+                  </span>
+                ) : (
+                  <>Can {u.ApiKeyUserAccess?.permission || "view"} ▾</>
+                )}
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await api.delete(`/keys/${apiKey.id}/access/user/${u.id}`);
+                    // Optimistic remove from UI
+                    setDetail((prev) => prev ? {
+                      ...prev,
+                      sharedUsers: prev.sharedUsers?.filter((su) => su.id !== u.id),
+                    } : prev);
+                    onChanged?.();
+                  } catch (err) {
+                    console.error("Remove access failed:", err);
+                  }
+                }}
+                className="text-[11px] text-red-500 hover:text-red-700 px-1.5 shrink-0 transition-colors hover:bg-red-50 dark:hover:bg-red-950 rounded"
+                title="Remove access"
+              >
+                ×
               </button>
             </div>
           ))}
@@ -586,7 +654,7 @@ function SharePopover({ apiKey, onClose, orgId, onChanged }: { apiKey: ApiKey; o
               <div className="w-7 h-7 rounded-btn-sm bg-accent-soft flex items-center justify-center text-accent">
                 <Users size={14} strokeWidth={1.6} />
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
                 <p className="text-[12.5px] font-medium text-ink">{g.name}</p>
                 <p className="text-[11px] text-muted">Group members inherit access</p>
               </div>
@@ -738,7 +806,7 @@ function CreateKeyModal({ orgId, onClose, onCreated }: { orgId: string; onClose:
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-ink/30 backdrop-blur-md" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-[520px] bg-surface border border-border rounded-xl shadow-popover overflow-hidden">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[520px] bg-surface border border-border rounded-xl shadow-popover overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-ink flex items-center justify-center">
@@ -777,7 +845,7 @@ function CreateKeyModal({ orgId, onClose, onCreated }: { orgId: string; onClose:
 
           <div>
             <label className="text-[13px] font-medium text-ink mb-2 block">Environment</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {(["dev", "staging", "prod"] as const).map((env) => {
                 const meta = envMeta[env];
                 const selected = environment === env;
@@ -833,7 +901,7 @@ function CreateKeyModal({ orgId, onClose, onCreated }: { orgId: string; onClose:
                             {r.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 overflow-hidden">
                           <p className="text-[12px] font-medium text-ink truncate">{r.name}</p>
                           <p className="text-[10px] text-muted truncate">{r.email || (r.type === "group" ? "Group" : "")}</p>
                         </div>
@@ -970,7 +1038,7 @@ function EditKeyModal({ apiKey, onClose, onSaved, orgId }: { apiKey: ApiKey; onC
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-ink/30 backdrop-blur-md" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-[520px] bg-surface border border-border rounded-xl shadow-popover overflow-hidden">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[520px] bg-surface border border-border rounded-xl shadow-popover overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-ink flex items-center justify-center"><Pencil size={14} strokeWidth={1.6} className="text-surface" /></div>
@@ -986,7 +1054,7 @@ function EditKeyModal({ apiKey, onClose, onSaved, orgId }: { apiKey: ApiKey; onC
           </div>
           <div>
             <label className="text-[13px] font-medium text-ink mb-2 block">Environment</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {(["dev", "staging", "prod"] as const).map((env) => {
                 const meta = envMeta[env];
                 const selected = environment === env;
@@ -1031,7 +1099,7 @@ function EditKeyModal({ apiKey, onClose, onSaved, orgId }: { apiKey: ApiKey; onC
                             {r.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 overflow-hidden">
                           <p className="text-[12px] font-medium text-ink truncate">{r.name}</p>
                           <p className="text-[10px] text-muted truncate">{r.email}</p>
                         </div>
@@ -1054,7 +1122,7 @@ function EditKeyModal({ apiKey, onClose, onSaved, orgId }: { apiKey: ApiKey; onC
                           {a.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         <p className="text-[12px] font-medium text-ink truncate">{a.name}</p>
                         <p className="text-[10px] text-muted">{a.type === "group" ? "Group" : a.email}</p>
                       </div>
@@ -1213,7 +1281,7 @@ function KeyDetailPane({ apiKey, onEdit, userId, onRevoke, orgId, onRefresh: _on
       ) : (
         <>
           {/* Stat cards */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
             <div className="bg-surface border border-border rounded-card px-4 py-3.5">
               <p className="text-[11px] text-muted font-medium">Calls this month</p>
               <p className="text-xl font-semibold text-ink tracking-tight mt-1">—</p>
@@ -1253,7 +1321,7 @@ function KeyDetailPane({ apiKey, onEdit, userId, onRevoke, orgId, onRefresh: _on
                     {detail.creator.username.slice(0, 2).toUpperCase()}
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <p className="text-[13px] font-medium text-ink">{detail.creator.username}</p>
                   <p className="text-[11.5px] text-muted">Key owner</p>
                 </div>
@@ -1271,7 +1339,7 @@ function KeyDetailPane({ apiKey, onEdit, userId, onRevoke, orgId, onRefresh: _on
                     {(u.display_name || u.username).split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <p className="text-[13px] font-medium text-ink">{u.display_name || u.username}</p>
                   <p className="text-[11.5px] text-muted">{u.username}</p>
                 </div>
@@ -1288,7 +1356,7 @@ function KeyDetailPane({ apiKey, onEdit, userId, onRevoke, orgId, onRefresh: _on
                 <div className="w-8 h-8 rounded-btn-sm bg-accent-soft flex items-center justify-center text-accent">
                   <Users size={15} strokeWidth={1.6} />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <p className="text-[13px] font-medium text-ink">{g.name}</p>
                   <p className="text-[11.5px] text-muted">Group members inherit access</p>
                 </div>
@@ -1396,7 +1464,7 @@ function KeyDetailView({ apiKey, onBack, onEdit }: { apiKey: ApiKey; onBack: () 
         <span className="text-[12px] text-muted">Created {new Date(apiKey.createdAt || apiKey.created_at || "").toLocaleDateString()}</span>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         <div className="bg-surface border border-border rounded-card px-4 py-3.5">
           <p className="text-[11px] text-muted font-medium">Calls this month</p>
           <p className="text-xl font-semibold text-ink tracking-tight mt-1">1,294</p>
@@ -1428,7 +1496,7 @@ function KeyDetailView({ apiKey, onBack, onEdit }: { apiKey: ApiKey; onBack: () 
             ) : (
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-purple-400 flex items-center justify-center text-white text-[11px] font-semibold">{p.initials}</div>
             )}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 overflow-hidden">
               <p className="text-[13px] font-medium text-ink">{p.name}</p>
               <p className="text-[11.5px] text-muted">{p.sub}</p>
             </div>

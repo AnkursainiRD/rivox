@@ -828,7 +828,7 @@ function DrawerPanel({ children }: { children: React.ReactNode }) {
     requestAnimationFrame(() => { if (el) { el.style.transform = "translateX(0)"; el.style.opacity = "1"; } });
   }, []);
   return (
-    <div ref={ref} className="fixed right-0 bottom-0 z-50 w-[520px] max-w-[85%] bg-surface border-l border-border shadow-xl flex flex-col overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+    <div ref={ref} className="fixed right-0 bottom-0 z-50 w-full sm:w-[520px] sm:max-w-[85%] bg-surface border-l border-border shadow-xl flex flex-col overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
       style={{ top: 0, transform: "translateX(100%)", opacity: 0 }}>
       {children}
     </div>
@@ -1309,7 +1309,7 @@ function BoardView({ issues, onUpdate, onDelete, onCreateClick }: {
 
   return (
     <div className="h-full p-5 overflow-auto relative bg-surface-2/30">
-      <div className="grid grid-cols-4 gap-3.5 h-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 h-full">
         {boardColumns.map((col, ci) => {
           const colIssues = byStatus(col.key);
           const isOver = dropTarget === col.key && dragId !== null;
@@ -2034,7 +2034,7 @@ function CommentItem({ comment, isOwn, onEdit, onDelete }: {
   return (
     <div className="flex gap-2.5 items-start group/comment">
       <Avatar user={comment.author} size={24} />
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         <div className="flex items-baseline gap-2">
           <span className="text-[12px] font-medium text-ink">{comment.author.display_name || comment.author.username}</span>
           <span className="text-[10.5px] text-muted">{ts}</span>

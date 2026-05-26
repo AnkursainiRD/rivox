@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   KeyRound,
   StickyNote,
@@ -16,6 +16,8 @@ import {
   Building2,
   UserCog,
   ArrowRight,
+  Menu,
+  X,
 } from "lucide-react";
 import rivoxMark from "../assets/rivox-mark.svg";
 import rivoxMarkInverted from "../assets/rivox-mark-inverted.svg";
@@ -49,6 +51,23 @@ interface SidebarProps {
 export function Sidebar({ theme, onToggleTheme, user, orgs, activeOrg, onSwitchOrg, onLogout, unreadCount = 0 }: SidebarProps) {
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [sidebarOpen]);
 
   // ⌘K shortcut
   useEffect(() => {
@@ -59,8 +78,9 @@ export function Sidebar({ theme, onToggleTheme, user, orgs, activeOrg, onSwitchO
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  return (
-    <aside className="flex flex-col w-[220px] h-full bg-sidebar border-r border-border shrink-0">
+  // Shared sidebar content (used in both mobile overlay and desktop)
+  const sidebarContent = (
+    <>
       {/* Workspace switcher */}
       <div className="px-3 pt-4 pb-2 relative">
         <button
@@ -236,11 +256,78 @@ export function Sidebar({ theme, onToggleTheme, user, orgs, activeOrg, onSwitchO
           </button>
         </div>
       </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* ── Mobile top bar (< md) ── */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-3 py-2.5 bg-sidebar border-b border-border">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-1.5 rounded-btn text-ink hover:bg-surface-2 transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu size={20} strokeWidth={1.6} />
+        </button>
+        <div className="flex items-center gap-2">
+          <img
+            src={theme === "dark" ? rivoxMarkInverted : rivoxMark}
+            alt="Rivox"
+            className="w-6 h-6 rounded-md"
+          />
+          <span className="text-sm font-semibold text-ink tracking-tight">
+            {activeOrg?.name || "rivox"}
+          </span>
+        </div>
+        {user.avatar_url ? (
+          <img
+            src={user.avatar_url}
+            alt={user.username}
+            className="w-7 h-7 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent to-purple-400 flex items-center justify-center text-white text-[10px] font-semibold">
+            {(user.display_name || user.username).slice(0, 2).toUpperCase()}
+          </div>
+        )}
+      </div>
+
+      {/* ── Mobile sidebar overlay (< md) ── */}
+      {sidebarOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+            onClick={() => setSidebarOpen(false)}
+          />
+          {/* Slide-in sidebar */}
+          <aside className="absolute top-0 left-0 bottom-0 w-[260px] flex flex-col bg-sidebar border-r border-border shadow-xl animate-slide-in-left">
+            {/* Close button at top */}
+            <div className="flex items-center justify-end px-3 pt-3 pb-0">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 rounded-btn text-muted hover:text-ink hover:bg-surface-2 transition-colors"
+                aria-label="Close menu"
+              >
+                <X size={18} strokeWidth={1.6} />
+              </button>
+            </div>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
+      {/* ── Desktop sidebar (>= md) ── */}
+      <aside className="hidden md:flex flex-col w-[220px] h-full bg-sidebar border-r border-border shrink-0">
+        {sidebarContent}
+      </aside>
+
       {/* Search modal */}
       {searchOpen && activeOrg && (
         <SearchModal orgId={activeOrg.id} onClose={() => setSearchOpen(false)} />
       )}
-    </aside>
+    </>
   );
 }
 

@@ -33,6 +33,30 @@ router.get("/users", auth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Delete user (super_admin only) — cascades all related data
+router.delete("/users/:userId", auth, async (req, res, next) => {
+  try {
+    const { User } = require("../models");
+    if (req.user.role !== "super_admin") return res.status(403).json({ error: "Super admin access required" });
+    if (req.params.userId === req.user.id) return res.status(400).json({ error: "Cannot delete yourself" });
+
+    const user = await User.findByPk(req.params.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const sequelize = require("../db");
+    // Delete all related data in order
+    await sequelize.query("DELETE FROM notification_preferences WHERE user_id = :uid", { replacements: { uid: req.params.userId } });
+    await sequelize.query("DELETE FROM notifications WHERE recipient_id = :uid OR sender_id = :uid", { replacements: { uid: req.params.userId } });
+    await sequelize.query("DELETE FROM issue_comments WHERE user_id = :uid", { replacements: { uid: req.params.userId } });
+    await sequelize.query("DELETE FROM api_key_user_access WHERE user_id = :uid OR granted_by = :uid", { replacements: { uid: req.params.userId } });
+    await sequelize.query("DELETE FROM group_members WHERE user_id = :uid", { replacements: { uid: req.params.userId } });
+    await sequelize.query("DELETE FROM org_members WHERE user_id = :uid", { replacements: { uid: req.params.userId } });
+    await user.destroy();
+
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 router.patch("/users/:userId/role", auth, async (req, res, next) => {
   try {
     const { User } = require("../models");

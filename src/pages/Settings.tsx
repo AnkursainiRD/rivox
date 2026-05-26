@@ -64,9 +64,9 @@ export function SettingsPage({ user, theme, onToggleTheme }: {
         <span className="text-ink font-medium">{tabLabels[activeTab]}</span>
       </div>
 
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
         {/* Settings sidebar */}
-        <div className="w-[220px] shrink-0 border-r border-border bg-surface overflow-y-auto py-3 px-3">
+        <div className="w-full md:w-[220px] shrink-0 border-b md:border-b-0 md:border-r border-border bg-surface overflow-x-auto md:overflow-y-auto py-2 px-3 flex md:block gap-1">
           {sidebarSections.map((section) => (
             <div key={section.title} className="mb-4">
               <div className="text-[10px] font-bold text-muted uppercase tracking-[0.08em] px-2.5 mb-1.5">{section.title}</div>
@@ -410,7 +410,7 @@ function AppearanceTab({ theme, onToggle }: { theme: "light" | "dark"; onToggle:
       {/* Theme */}
       <div className="bg-surface border border-border rounded-xl p-6 mb-4">
         <h3 className="text-[13px] font-semibold text-ink mb-4">Theme</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button onClick={() => { if (theme === "dark") onToggle(); }}
             className={`p-4 rounded-xl border-2 transition-all ${theme === "light" ? "border-accent" : "border-border hover:border-accent/30"}`}>
             <div className="w-full h-24 rounded-lg bg-white border border-zinc-200 mb-3 flex items-end p-2.5 gap-2">
@@ -630,7 +630,7 @@ function IntegrationsTab({ user }: { user: User }) {
                 </p>
 
                 {/* Features */}
-                <div className="grid grid-cols-2 gap-2 mb-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
                   {[
                     { icon: Bell, label: "DM notifications", desc: "Get notified instantly via Discord DM" },
                     { icon: UserIcon, label: "Issue assignments", desc: "Know when you're assigned an issue" },

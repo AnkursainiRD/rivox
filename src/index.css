@@ -97,6 +97,15 @@ kbd {
   animation: slide-in-right 0.15s ease-out forwards;
 }
 
+/* Mobile sidebar slide-in from left */
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.2s ease-out forwards;
+}
+
 /* Tight letter-spacing for display sizes */
 h1 { letter-spacing: -0.025em; }
 h2 { letter-spacing: -0.02em; }

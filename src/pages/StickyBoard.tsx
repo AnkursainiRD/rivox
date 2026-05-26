@@ -87,7 +87,7 @@ export function StickyBoardPage({ orgId, userId, userRole }: { orgId?: string; u
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [scope, setScope] = useState<Scope>("my");
-  const [layout, setLayout] = useState<Layout>("grid");
+  const [layout, setLayout] = useState<Layout>("kanban");
   const [showCreate, setShowCreate] = useState(false);
   const [filterUser, setFilterUser] = useState<string | null>(null);
   const [filterGroup, setFilterGroup] = useState<string | null>(null);
@@ -197,8 +197,14 @@ export function StickyBoardPage({ orgId, userId, userRole }: { orgId?: string; u
   };
 
   const updateTask = async (id: string, data: Partial<Task>) => {
-    await api.patch(`/tasks/${id}`, data);
+    // Optimistic update — move card instantly
     setTasks((prev) => prev.map((t) => t.id === id ? { ...t, ...data } : t));
+    try {
+      await api.patch(`/tasks/${id}`, data);
+    } catch {
+      // Revert on error
+      fetchTasks();
+    }
   };
 
   const deleteTask = async (id: string) => {
@@ -506,7 +512,7 @@ function GridView({ tasks, onUpdate, onDelete, onCreate }: {
   onDelete: (id: string) => void; onCreate: () => void;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-4 overflow-auto h-full pb-4 content-start">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-auto h-full pb-4 content-start">
       {tasks.map((t) => (
         <NoteCard key={t.id} task={t} onUpdate={onUpdate} onDelete={onDelete} />
       ))}
@@ -567,7 +573,7 @@ function KanbanView({ tasks, onUpdate, onDelete, userId, isAdmin, scope, onCreat
   }, [dragId, dropCol, tasks, onUpdate, findColumn]);
 
   return (
-    <div className="grid grid-cols-4 gap-4 h-full overflow-auto pb-4 relative">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 h-full overflow-auto pb-4 relative">
       {kanbanCols.map((col, ci) => {
         const colTasks = byStatus(col.key);
         const isOver = dropCol === col.key && dragId !== null;
@@ -753,7 +759,7 @@ function NoteCard({ task, compact, onUpdate, onDelete }: {
       )}
       {(compact || !task.body) && <div className="flex-1" />}
 
-      {/* Footer: tag chip left, avatar right */}
+      {/* Footer: tag + creator left, assignee avatar right */}
       <div className="flex items-center justify-between mt-3 pt-0.5">
         <div className="flex items-center gap-1.5">
           {tag && (
@@ -761,15 +767,23 @@ function NoteCard({ task, compact, onUpdate, onDelete }: {
               {tag.name}
             </span>
           )}
+          {task.creator && (
+            <span className="text-[10px] text-[#777] truncate max-w-[100px]">
+              {task.creator.display_name || task.creator.username}
+            </span>
+          )}
         </div>
         {task.assignee && (
-          task.assignee.avatar_url ? (
-            <img src={task.assignee.avatar_url} className="w-6 h-6 rounded-full object-cover ring-2 ring-white/60" />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-accent to-purple-400 flex items-center justify-center text-white text-[8px] font-bold ring-2 ring-white/60">
-              {(task.assignee.display_name || task.assignee.username).slice(0, 2).toUpperCase()}
-            </div>
-          )
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[10px] text-[#777] hidden group-hover/note:inline">{task.assignee.display_name || task.assignee.username}</span>
+            {task.assignee.avatar_url ? (
+              <img src={task.assignee.avatar_url} className="w-6 h-6 rounded-full object-cover ring-2 ring-white/60" title={task.assignee.display_name || task.assignee.username} />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-accent to-purple-400 flex items-center justify-center text-white text-[8px] font-bold ring-2 ring-white/60" title={task.assignee.display_name || task.assignee.username}>
+                {(task.assignee.display_name || task.assignee.username).slice(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -963,7 +977,7 @@ function StickyDrawerPanel({ children }: { children: React.ReactNode }) {
   }, []);
   return (
     <div ref={ref}
-      className="fixed right-0 bottom-0 z-50 w-[440px] max-w-[85vw] bg-surface border-l border-border shadow-xl flex flex-col overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+      className="fixed right-0 bottom-0 z-50 w-full sm:w-[440px] sm:max-w-[85vw] bg-surface border-l border-border shadow-xl flex flex-col overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
       style={{ top: 0, transform: "translateX(100%)", opacity: 0 }}>
       {children}
     </div>

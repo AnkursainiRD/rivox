@@ -213,7 +213,7 @@ export function HelpPage() {
 
         <div className="px-6 pb-10 max-w-4xl mx-auto">
           {/* Quick links */}
-          <div className="grid grid-cols-3 gap-3 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-10">
             {[
               { icon: Book, label: "Documentation", desc: "Guides and API reference", href: "#" },
               { icon: MessageCircle, label: "Contact Support", desc: "Get help from our team", href: "#contact" },
@@ -237,7 +237,7 @@ export function HelpPage() {
           {/* Features */}
           <div className="mb-10">
             <h3 className="text-[12px] font-bold text-muted uppercase tracking-[0.08em] mb-4">Platform Features</h3>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {features.map((f) => (
                 <div key={f.title} className="p-4 bg-surface border border-border rounded-xl hover:shadow-sm transition-shadow">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: f.color + "14" }}>
@@ -289,7 +289,7 @@ export function HelpPage() {
           <div className="mb-10" id="shortcuts">
             <h3 className="text-[12px] font-bold text-muted uppercase tracking-[0.08em] mb-4">Keyboard Shortcuts</h3>
             <div className="bg-surface border border-border rounded-xl overflow-hidden">
-              <div className="grid grid-cols-2 divide-x divide-border">
+              <div className="grid grid-cols-1 md:grid-cols-2 divide-x divide-border">
                 {[shortcuts.slice(0, 4), shortcuts.slice(4)].map((col, ci) => (
                   <div key={ci} className="divide-y divide-border">
                     {col.map((s, i) => (
@@ -314,7 +314,7 @@ export function HelpPage() {
           {/* Resources */}
           <div className="mb-10">
             <h3 className="text-[12px] font-bold text-muted uppercase tracking-[0.08em] mb-4">Resources</h3>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {resources.map((r) => (
                 <a key={r.title} href={r.href}
                   className="flex items-start gap-3 p-4 bg-surface border border-border rounded-xl hover:border-accent/20 hover:shadow-sm transition-all group">
@@ -335,7 +335,7 @@ export function HelpPage() {
           {/* Security */}
           <div className="mb-10">
             <h3 className="text-[12px] font-bold text-muted uppercase tracking-[0.08em] mb-4">Security & Privacy</h3>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {[
                 { icon: Lock, title: "Encryption", desc: "API keys encrypted at rest with AES-256. All traffic over TLS 1.3." },
                 { icon: Shield, title: "Authentication", desc: "JWT tokens with configurable expiry. Discord OAuth with minimal scopes." },

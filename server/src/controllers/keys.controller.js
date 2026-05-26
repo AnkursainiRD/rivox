@@ -1,8 +1,16 @@
 const { Op } = require("sequelize");
-const { ApiKey, ApiKeyUserAccess, ApiKeyGroupAccess, ApiKeyRevocation, User, Group, GroupMember } = require("../models");
+const { ApiKey, ApiKeyUserAccess, ApiKeyGroupAccess, ApiKeyRevocation, User, Group, GroupMember, OrgMember } = require("../models");
 const { logActivity } = require("../utils/log");
 const { notify } = require("../utils/notify");
 const { encrypt, decrypt } = require("../utils/crypto");
+
+// Check if user can manage a key (owner, admin, or super_admin)
+async function canManageKey(key, userId) {
+  if (key.created_by === userId) return true;
+  const member = await OrgMember.findOne({ where: { org_id: key.org_id, user_id: userId } });
+  if (!member) return false;
+  return member.role === "super_admin" || member.role === "admin";
+}
 
 exports.list = async (req, res, next) => {
   try {
@@ -64,6 +72,7 @@ exports.update = async (req, res, next) => {
   try {
     const key = await ApiKey.findByPk(req.params.keyId);
     if (!key) return res.status(404).json({ error: "Key not found" });
+    if (!(await canManageKey(key, req.user.id))) return res.status(403).json({ error: "Only the key owner or admin can edit this key" });
     await key.update(req.body);
     await logActivity(key.org_id, req.user.id, "updated", "api_key", key.id, req.body);
     res.json(key);
@@ -109,6 +118,9 @@ exports.getById = async (req, res, next) => {
 
 exports.shareWithUser = async (req, res, next) => {
   try {
+    const keyCheck = await ApiKey.findByPk(req.params.keyId);
+    if (!keyCheck) return res.status(404).json({ error: "Key not found" });
+    if (!(await canManageKey(keyCheck, req.user.id))) return res.status(403).json({ error: "Only the key owner or admin can share this key" });
     const { user_id, permission = "view" } = req.body;
     await ApiKeyUserAccess.upsert({ key_id: req.params.keyId, user_id, permission, granted_by: req.user.id });
 
@@ -128,6 +140,9 @@ exports.shareWithUser = async (req, res, next) => {
 
 exports.shareWithGroup = async (req, res, next) => {
   try {
+    const keyCheck2 = await ApiKey.findByPk(req.params.keyId);
+    if (!keyCheck2) return res.status(404).json({ error: "Key not found" });
+    if (!(await canManageKey(keyCheck2, req.user.id))) return res.status(403).json({ error: "Only the key owner or admin can share this key" });
     const { group_id, permission = "view" } = req.body;
     await ApiKeyGroupAccess.upsert({ key_id: req.params.keyId, group_id, permission, granted_by: req.user.id });
 
@@ -146,6 +161,7 @@ exports.revoke = async (req, res, next) => {
     const { reason } = req.body;
     const key = await ApiKey.findByPk(req.params.keyId);
     if (!key) return res.status(404).json({ error: "Key not found" });
+    if (!(await canManageKey(key, req.user.id))) return res.status(403).json({ error: "Only the key owner or admin can revoke this key" });
 
     const keyData = { name: key.name, environment: key.environment, reason };
     const orgId = key.org_id;
@@ -165,6 +181,9 @@ exports.revoke = async (req, res, next) => {
 
 exports.removeUserAccess = async (req, res, next) => {
   try {
+    const keyCheck3 = await ApiKey.findByPk(req.params.keyId);
+    if (!keyCheck3) return res.status(404).json({ error: "Key not found" });
+    if (!(await canManageKey(keyCheck3, req.user.id))) return res.status(403).json({ error: "Only the key owner or admin can remove access" });
     await ApiKeyUserAccess.destroy({ where: { key_id: req.params.keyId, user_id: req.params.userId } });
 
     const key = await ApiKey.findByPk(req.params.keyId);

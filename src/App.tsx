@@ -99,11 +99,11 @@ function AuthenticatedApp({ auth, theme, toggle }: {
           onLogout={auth.logout}
           unreadCount={notif.unreadCount}
         />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 pt-16 md:pt-6">
           <Routes>
             <Route path="/" element={<ApiKeysPage orgId={auth.activeOrg.id} userId={auth.user.id} />} />
             <Route path="/sticky-board" element={<StickyBoardPage orgId={auth.activeOrg.id} userId={auth.user.id} userRole={auth.user.role} />} />
-            <Route path="/team" element={<TeamPage orgId={auth.activeOrg.id} />} />
+            <Route path="/team" element={<TeamPage orgId={auth.activeOrg.id} userId={auth.user.id} />} />
             <Route path="/issues" element={<IssuesPage orgId={auth.activeOrg.id} />} />
             <Route path="/issues/:issueId" element={<IssueDetailPage orgId={auth.activeOrg.id} userId={auth.user.id} />} />
             <Route path="/notifications" element={<NotificationsPage />} />

@@ -25,6 +25,8 @@ export function AllUsersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleMenu, setRoleMenu] = useState<string | null>(null);
+  const [userMenu, setUserMenu] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -163,10 +165,41 @@ export function AllUsersPage() {
                     <td className="px-4 py-3 text-[12px] text-muted">
                       {new Date(u.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-3">
-                      <button className="p-1 rounded-btn-sm text-muted hover:bg-surface-2 transition-colors">
+                    <td className="px-4 py-3 relative">
+                      <button onClick={() => setUserMenu(userMenu === u.id ? null : u.id)}
+                        className="p-1 rounded-btn-sm text-muted hover:bg-surface-2 transition-colors">
                         <MoreHorizontal size={14} strokeWidth={1.6} />
                       </button>
+                      {userMenu === u.id && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setUserMenu(null)} />
+                          <div className="absolute right-4 top-10 z-50 w-44 bg-surface border border-border rounded-card shadow-popover py-1">
+                            <button
+                              disabled={deleting === u.id}
+                              onClick={async () => {
+                                if (!confirm(`Delete ${u.display_name || u.username}? This will remove all their data permanently.`)) return;
+                                setDeleting(u.id);
+                                try {
+                                  await api.delete(`/users/${u.id}`);
+                                  setUsers((prev) => prev.filter((x) => x.id !== u.id));
+                                  setUserMenu(null);
+                                } catch (err) {
+                                  alert("Failed to delete user. Only super admins can do this.");
+                                } finally {
+                                  setDeleting(null);
+                                }
+                              }}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors disabled:opacity-50"
+                            >
+                              {deleting === u.id ? (
+                                <><span className="w-3 h-3 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" /> Deleting...</>
+                              ) : (
+                                "Delete user"
+                              )}
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </td>
                   </tr>
                 );

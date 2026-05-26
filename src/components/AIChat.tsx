@@ -175,7 +175,7 @@ export function AISideRail({ onClose, onNavigate, userName, orgId }: {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="w-[340px] xl:w-[400px] shrink-0 bg-surface border-l border-border flex flex-col h-full relative"
+    <div className="w-full sm:w-[340px] xl:w-[400px] shrink-0 bg-surface border-l border-border flex flex-col h-full relative"
       style={{ boxShadow: "-4px 0 12px -4px rgba(0,0,0,0.04)" }}>
 
       {/* Header with gradient wash */}
@@ -379,7 +379,7 @@ export function AICommandPalette({ onClose, onSend }: {
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[8px]" onClick={onClose} />
 
       {/* Palette */}
-      <div className="absolute top-[14%] left-1/2 -translate-x-1/2 w-[600px] bg-surface border border-border rounded-[18px] overflow-hidden"
+      <div className="absolute top-[14%] left-1/2 -translate-x-1/2 w-[95vw] sm:w-[600px] bg-surface border border-border rounded-[18px] overflow-hidden"
         style={{ boxShadow: "0 32px 80px -8px rgba(0,0,0,0.25), 0 4px 12px rgba(0,0,0,0.08)" }}>
 
         {/* Input row */}

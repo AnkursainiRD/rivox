@@ -93,6 +93,26 @@ export function NotificationsPage() {
 
   useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
+  // Listen for real-time notifications via SSE
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const count = (e as CustomEvent).detail;
+      if (typeof count === "number") setUnreadCount(count);
+      // Refetch to get the new notification
+      fetchNotifications();
+    };
+    window.addEventListener("notif-count", handler);
+
+    // Also listen for new notifications from the SSE stream
+    const sseHandler = () => { fetchNotifications(); };
+    window.addEventListener("rivox-new-notification", sseHandler);
+
+    return () => {
+      window.removeEventListener("notif-count", handler);
+      window.removeEventListener("rivox-new-notification", sseHandler);
+    };
+  }, [fetchNotifications]);
+
   const markRead = async (id: string) => {
     await api.patch(`/notifications/${id}/read`);
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
@@ -211,7 +231,7 @@ export function NotificationsPage() {
             <p className="text-[15px] font-medium text-ink mb-1">
               {filter === "unread" ? "All caught up!" : "No notifications"}
             </p>
-            <p className="text-[12.5px] text-muted max-w-[280px]">
+            <p className="text-[12.5px] text-muted max-w-full sm:max-w-[280px]">
               {filter === "unread"
                 ? "You've read all your notifications. Nice work."
                 : `No ${filter === "all" ? "" : filter + " "}notifications yet. They'll show up here when something happens.`}
@@ -289,7 +309,7 @@ function NotificationCard({ notification: n, onMarkRead }: {
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         {/* Type label + time */}
         <div className="flex items-center gap-2 mb-1">
           {tc && (
@@ -340,6 +360,8 @@ function NotificationCard({ notification: n, onMarkRead }: {
    ══════════════════════════════════════════════════════════════════════════ */
 
 function RichPreview({ notification: n }: { notification: NotificationItem }) {
+  const navigate = useNavigate();
+
   // Issue-related: show issue preview
   if (n.entity_type === "issue" && (n.type === "issue_assigned" || n.type === "issue_resolved")) {
     return (
@@ -353,44 +375,54 @@ function RichPreview({ notification: n }: { notification: NotificationItem }) {
           <PriorityBarsInline /> Medium
         </span>
         <div className="flex-1" />
-        <span className="text-[11px] text-muted">
-          {n.title.includes("due") ? n.title.split("due")[1] : ""}
-        </span>
-        <button className="px-2.5 py-1 text-[10.5px] font-medium text-ink border border-border rounded-md hover:bg-surface-2 transition-colors">
+        <button onClick={() => navigate(`/issues/${n.entity_id}`)}
+          className="px-2.5 py-1 text-[10.5px] font-medium text-ink border border-border rounded-md hover:bg-surface-2 transition-colors">
           Open
         </button>
       </div>
     );
   }
 
-  // Comment/mention: show quoted comment
+  // Comment/mention: show quoted comment — clickable to open issue
   if (n.type === "issue_commented" || n.type === "mention") {
     return (
-      <div className="mt-2 pl-3 border-l-2 border-accent/30 py-1">
+      <button onClick={() => navigate(`/issues/${n.entity_id}`)} className="mt-2 pl-3 border-l-2 border-accent/30 py-1 block text-left hover:opacity-80 transition-opacity">
         <p className="text-[12px] text-muted italic leading-relaxed line-clamp-2">
           "{n.body || n.title}"
         </p>
-      </div>
+      </button>
     );
   }
 
   // Key-related: show key preview
   if (n.entity_type === "api_key") {
+    const isRevoked = n.type === "key_revoked";
     return (
       <div className="mt-2 px-3 py-2.5 bg-surface border border-border rounded-lg flex items-center gap-3">
-        <KeyRound size={13} className="text-muted shrink-0" />
-        <div className="flex-1 min-w-0">
-          <span className="text-[12px] font-medium text-ink">{n.title.split(":")[0] || "API Key"}</span>
+        <KeyRound size={13} className={`shrink-0 ${isRevoked ? "text-red-400" : "text-muted"}`} />
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <span className={`text-[12px] font-medium ${isRevoked ? "text-muted line-through" : "text-ink"}`}>
+            {isRevoked ? "Access revoked" : (n.title.split(":")[0] || "API Key")}
+          </span>
           <span className="text-[10.5px] text-muted ml-2">sk-•••</span>
         </div>
-        <span className="flex items-center gap-1.5 text-[10.5px] text-muted">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-          prod
-        </span>
-        <button className="px-2.5 py-1 text-[10.5px] font-medium text-ink border border-border rounded-md hover:bg-surface-2 transition-colors">
-          Open key
-        </button>
+        {!isRevoked && (
+          <button onClick={() => navigate("/")}
+            className="px-2.5 py-1 text-[10.5px] font-medium text-ink border border-border rounded-md hover:bg-surface-2 transition-colors shrink-0">
+            Open key
+          </button>
+        )}
       </div>
+    );
+  }
+
+  // Group-related: navigate to team
+  if (n.entity_type === "group") {
+    return (
+      <button onClick={() => navigate("/team")}
+        className="mt-2 px-2.5 py-1 text-[10.5px] font-medium text-accent hover:underline">
+        Open team →
+      </button>
     );
   }
 

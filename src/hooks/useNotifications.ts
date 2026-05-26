@@ -59,6 +59,9 @@ export function useNotifications() {
         };
         setToasts((prev) => [toast, ...prev].slice(0, 5));
 
+        // Notify the Notifications page to refetch
+        window.dispatchEvent(new Event("rivox-new-notification"));
+
         // Auto-dismiss after 5s
         setTimeout(() => {
           setToasts((prev) => prev.filter((t) => t.id !== toast.id));
