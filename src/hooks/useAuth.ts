@@ -16,6 +16,9 @@ export interface Organization {
   name: string;
   slug: string;
   OrgMember?: { role: string };
+  member_count?: number;
+  key_count?: number;
+  members_preview?: { display_name: string; avatar_url: string | null }[];
 }
 
 interface MeResponse {

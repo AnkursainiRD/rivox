@@ -1,9 +1,10 @@
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { ToastContainer } from "./components/ToastContainer";
 import { api } from "./lib/api";
 import rivoxMark from "./assets/rivox-mark.svg";
+import { AISideRail, AICommandPalette } from "./components/AIChat";
 import { useTheme } from "./hooks/useTheme";
 import { useAuth } from "./hooks/useAuth";
 import { useNotifications } from "./hooks/useNotifications";
@@ -63,6 +64,27 @@ function AuthenticatedApp({ auth, theme, toggle }: {
 }) {
   const notif = useNotifications();
   const [chatOpen, setChatOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // ⌘J shortcut for command palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "j") {
+        e.preventDefault();
+        setPaletteOpen((p) => !p);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const handlePaletteSend = (text: string) => {
+    setChatOpen(true);
+    // Small delay so the side rail mounts first
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("rivox-ai-send", { detail: text }));
+    }, 100);
+  };
 
   return (
     <BrowserRouter>
@@ -94,20 +116,25 @@ function AuthenticatedApp({ auth, theme, toggle }: {
           </Routes>
         </main>
 
-        {/* AI Chat sidebar */}
-        {chatOpen && <AIChatPanelWrapper onClose={() => setChatOpen(false)} user={auth.user} orgId={auth.activeOrg.id} />}
+        {/* AI Side Rail */}
+        {chatOpen && <AISideRailWrapper onClose={() => setChatOpen(false)} user={auth.user} orgId={auth.activeOrg.id} />}
+
+        {/* Command Palette */}
+        {paletteOpen && <AICommandPalette onClose={() => setPaletteOpen(false)} onSend={handlePaletteSend} />}
 
         {/* Toast notifications */}
         <ToastContainer toasts={notif.toasts} onDismiss={notif.dismissToast} />
 
-        {/* Chat toggle button */}
+        {/* AI toggle button */}
         {!chatOpen && (
           <button
             onClick={() => setChatOpen(true)}
-            className="fixed bottom-6 right-6 w-11 h-11 rounded-xl bg-accent text-white shadow-lg hover:opacity-90 transition-all flex items-center justify-center z-50 group"
+            className="fixed bottom-6 right-6 w-11 h-11 rounded-xl text-white shadow-lg hover:opacity-90 transition-all flex items-center justify-center z-50"
+            style={{ background: "linear-gradient(135deg, #7c7cf0, #a5a5ff)", boxShadow: "0 8px 20px -4px rgba(124,124,240,0.5)" }}
           >
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-              <path d="M12 3C7 3 3 6.6 3 11c0 2.5 1.3 4.7 3.4 6.2L5 21l4.3-2.2c.9.2 1.8.2 2.7.2 5 0 9-3.6 9-8s-4-8-9-8z" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z" fill="#fff" />
+              <path d="M19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16z" fill="#fff" opacity="0.65" />
             </svg>
           </button>
         )}
@@ -116,183 +143,10 @@ function AuthenticatedApp({ auth, theme, toggle }: {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   AI CHAT PANEL — right sidebar, native design
-   ══════════════════════════════════════════════════════════════════════════ */
 
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
-const CHAT_API = import.meta.env.DEV
-  ? "http://localhost:3001/api/chat"
-  : "https://rivox-cpbg.onrender.com/api/chat";
-
-function AIChatPanelWrapper(props: { onClose: () => void; user: { display_name: string | null; username: string }; orgId: string }) {
+function AISideRailWrapper({ onClose, user, orgId }: { onClose: () => void; user: { display_name: string | null; username: string }; orgId: string }) {
   const navigate = useNavigate();
-  return <AIChatPanel {...props} onNavigate={(path: string) => navigate(path)} />;
-}
-
-function AIChatPanel({ onClose, user, orgId, onNavigate }: { onClose: () => void; user: { display_name: string | null; username: string }; orgId: string; onNavigate: (path: string) => void }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [streaming, setStreaming] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-
-  useEffect(() => { scrollToBottom(); }, [messages]);
-
-  const sendMessage = async () => {
-    const text = input.trim();
-    if (!text || streaming) return;
-
-    const userMsg: ChatMessage = { role: "user", content: text };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
-    setInput("");
-    setStreaming(true);
-
-    // Add empty assistant message to stream into
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
-
-    try {
-      const token = localStorage.getItem("rivox-token") || "";
-      const res = await fetch(CHAT_API, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ messages: newMessages, orgId }),
-      });
-
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.startsWith("data: ") && line !== "data: [DONE]") {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.action === "navigate" && data.path) {
-                onNavigate(data.path);
-              } else if (data.text) {
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  updated[updated.length - 1] = {
-                    ...updated[updated.length - 1],
-                    content: updated[updated.length - 1].content + data.text,
-                  };
-                  return updated;
-                });
-              }
-            } catch { /* skip malformed */ }
-          }
-        }
-      }
-    } catch (err) {
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = { role: "assistant", content: "Sorry, something went wrong. Please try again." };
-        return updated;
-      });
-    } finally {
-      setStreaming(false);
-    }
-  };
-
-  return (
-    <div className="w-[360px] shrink-0 border-l border-border bg-surface flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center">
-            <svg width="14" height="14" fill="none" stroke="var(--color-accent)" strokeWidth="1.8" viewBox="0 0 24 24">
-              <path d="M12 3C7 3 3 6.6 3 11c0 2.5 1.3 4.7 3.4 6.2L5 21l4.3-2.2c.9.2 1.8.2 2.7.2 5 0 9-3.6 9-8s-4-8-9-8z" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <div>
-            <div className="text-[13px] font-semibold text-ink leading-tight">Rivox AI</div>
-            <div className="text-[10px] text-muted">Powered by Claude</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={() => setMessages([])} className="p-1.5 rounded-lg text-muted hover:text-ink hover:bg-surface-2 transition-colors" title="Clear chat">
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M5 6v14a2 2 0 002 2h10a2 2 0 002-2V6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </button>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-muted hover:text-ink hover:bg-surface-2 transition-colors">
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" /></svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mb-4">
-              <svg width="22" height="22" fill="none" stroke="var(--color-accent)" strokeWidth="1.4" viewBox="0 0 24 24">
-                <path d="M12 3C7 3 3 6.6 3 11c0 2.5 1.3 4.7 3.4 6.2L5 21l4.3-2.2c.9.2 1.8.2 2.7.2 5 0 9-3.6 9-8s-4-8-9-8z" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <p className="text-[14px] font-medium text-ink mb-1">Hi, {user.display_name || user.username}</p>
-            <p className="text-[12px] text-muted leading-relaxed">Ask me anything about your workspace — issues, keys, tasks, or team.</p>
-          </div>
-        )}
-
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${
-              msg.role === "user"
-                ? "bg-accent text-white rounded-br-md"
-                : "bg-surface-2 text-ink border border-border rounded-bl-md"
-            }`}>
-              {msg.content || (streaming && i === messages.length - 1 ? (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-muted/40 animate-pulse" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-muted/40 animate-pulse" style={{ animationDelay: "0.2s" }} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-muted/40 animate-pulse" style={{ animationDelay: "0.4s" }} />
-                </div>
-              ) : "")}
-            </div>
-          </div>
-        ))}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input */}
-      <div className="shrink-0 px-3 pb-3 pt-1">
-        <div className="flex items-end gap-2 bg-surface-2/60 border border-border rounded-xl px-3 py-2 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/10 transition-colors">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-            placeholder="Ask Rivox AI..."
-            rows={1}
-            className="flex-1 bg-transparent text-[13px] text-ink outline-none resize-none placeholder:text-muted/40 max-h-[100px]"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!input.trim() || streaming}
-            className="p-1.5 rounded-lg bg-accent text-white disabled:opacity-30 hover:opacity-90 transition-opacity shrink-0"
-          >
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </button>
-        </div>
-        <div className="text-[10px] text-muted/40 text-center mt-1.5">Shift+Enter for new line · Enter to send</div>
-      </div>
-    </div>
-  );
+  return <AISideRail onClose={onClose} onNavigate={(path) => navigate(path)} userName={user.display_name || user.username} orgId={orgId} />;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -414,6 +268,9 @@ function WorkspacePicker({ auth }: { auth: ReturnType<typeof useAuth> }) {
   const orgRow = (org: typeof auth.orgs[0], i: number, isFirst: boolean = false) => {
     const color = ORG_COLORS[i % ORG_COLORS.length];
     const role = org.OrgMember?.role || "member";
+    const memberCount = Number(org.member_count) || 0;
+    const keyCount = Number(org.key_count) || 0;
+    const previews = org.members_preview || [];
     return (
       <button
         key={org.id}
@@ -435,8 +292,33 @@ function WorkspacePicker({ auth }: { auth: ReturnType<typeof useAuth> }) {
           </div>
           <div className="text-[11.5px] text-muted flex items-center gap-2 mt-0.5">
             <span className="font-mono">@{org.slug}</span>
+            <span className="text-muted/30">·</span>
+            <span>{memberCount} member{memberCount !== 1 ? "s" : ""}</span>
+            <span className="text-muted/30">·</span>
+            <span>{keyCount} key{keyCount !== 1 ? "s" : ""}</span>
           </div>
         </div>
+
+        {/* Avatar stack */}
+        {previews.length > 0 && (
+          <div className="flex items-center shrink-0">
+            {previews.slice(0, 3).map((m, j) => (
+              m.avatar_url ? (
+                <img key={j} src={m.avatar_url} className="w-5 h-5 rounded-full object-cover" style={{ marginLeft: j === 0 ? 0 : -6, boxShadow: "0 0 0 2px var(--color-surface)" }} />
+              ) : (
+                <div key={j} className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px] font-bold" style={{ background: AVATAR_COLORS[j % AVATAR_COLORS.length], marginLeft: j === 0 ? 0 : -6, boxShadow: "0 0 0 2px var(--color-surface)" }}>
+                  {(m.display_name || "?").charAt(0).toUpperCase()}
+                </div>
+              )
+            ))}
+            {memberCount > 3 && (
+              <div className="w-5 h-5 rounded-full bg-surface-2 flex items-center justify-center text-[8px] font-semibold text-muted" style={{ marginLeft: -6, boxShadow: "0 0 0 2px var(--color-surface)" }}>
+                +{memberCount - 3}
+              </div>
+            )}
+          </div>
+        )}
+
         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" className={`shrink-0 ${isFirst ? "text-accent" : "text-muted/25 group-hover:text-accent"} transition-colors`} viewBox="0 0 24 24">
           <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

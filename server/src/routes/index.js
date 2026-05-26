@@ -91,72 +91,11 @@ router.patch("/tasks/:taskId", auth, tasksCtrl.update);
 router.delete("/tasks/:taskId", auth, tasksCtrl.remove);
 
 // ── AI Copilot Chat ────────────────────────────────────────
-const Anthropic = require("@anthropic-ai/sdk");
-const aiTools = require("../utils/ai-tools");
+const { handleChat } = require("../ai/chat");
 
 router.post("/chat", auth, async (req, res, next) => {
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const { messages, orgId } = req.body;
-    const ctx = { orgId, userId: req.user.id };
-
-    res.writeHead(200, {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    });
-
-    let chatMessages = [...messages];
-    let maxRounds = 5; // prevent infinite tool loops
-
-    while (maxRounds-- > 0) {
-      const response = await client.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
-        system: `You are Rivox AI, a concise workspace assistant.
-
-IMPORTANT RULES:
-- When the user says "show me", "go to", "open", or "take me to" something — use the navigate or open_issue tool to take them to that page. Do NOT list data in chat.
-- Only use list/data tools (list_issues, list_tasks, etc.) when the user explicitly asks to "search", "find", "how many", "count", or asks a specific question about data.
-- For "show me the issues" → call navigate with page "issues". Do NOT call list_issues.
-- For "show me issue #12" → call open_issue. Do NOT list it in chat.
-- For "how many open bugs are there?" → call list_issues, then answer with a count.
-- For "create a task to fix login" → call create_task, then confirm briefly.
-- Keep responses short. No markdown tables unless explicitly asked.`,
-        tools: aiTools.definitions,
-        messages: chatMessages,
-      });
-
-      // Check if the model wants to use tools
-      const toolBlocks = response.content.filter((b) => b.type === "tool_use");
-
-      if (toolBlocks.length === 0) {
-        // No tools — stream the text response
-        for (const block of response.content) {
-          if (block.type === "text" && block.text) {
-            res.write(`data: ${JSON.stringify({ text: block.text })}\n\n`);
-          }
-        }
-        break;
-      }
-
-      // Execute tools and continue the conversation
-      chatMessages.push({ role: "assistant", content: response.content });
-
-      const toolResults = [];
-      for (const tool of toolBlocks) {
-        const result = await aiTools.execute(tool.name, tool.input, ctx);
-        // Stream actions to the frontend
-        if (result?.__action) {
-          res.write(`data: ${JSON.stringify({ action: result.__action, path: result.path })}\n\n`);
-        }
-        toolResults.push({ type: "tool_result", tool_use_id: tool.id, content: JSON.stringify(result) });
-      }
-      chatMessages.push({ role: "user", content: toolResults });
-    }
-
-    res.write("data: [DONE]\n\n");
-    res.end();
+    await handleChat(req, res);
   } catch (err) {
     if (!res.headersSent) return next(err);
     res.end();

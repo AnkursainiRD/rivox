@@ -463,7 +463,7 @@ function IntegrationsTab({ user }: { user: User }) {
   };
 
   const discordClientId = "1506189937664462848";
-  const botInviteUrl = `https://discord.com/oauth2/authorize?client_id=${discordClientId}&permissions=2048&scope=bot%20applications.commands`;
+  const botInviteUrl = `https://discord.com/oauth2/authorize?client_id=${discordClientId}&permissions=84992&scope=bot`;
 
   return (
     <div className="max-w-3xl mx-auto px-10 py-8">

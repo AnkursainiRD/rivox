@@ -371,48 +371,53 @@ function SearchModal({ orgId, onClose }: { orgId: string; onClose: () => void })
 
   return (
     <>
-      <div className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="fixed z-[100] top-[15%] left-1/2 -translate-x-1/2 w-[520px] max-w-[90vw] bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden">
+      <div className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-[8px]" onClick={onClose} />
+      <div className="fixed z-[100] top-[14%] left-1/2 -translate-x-1/2 w-[600px] max-w-[90vw] bg-surface border border-border rounded-[18px] overflow-hidden"
+        style={{ boxShadow: "0 32px 80px -8px rgba(0,0,0,0.25), 0 4px 12px rgba(0,0,0,0.08)" }}>
         {/* Input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border">
-          <Search size={16} className="text-muted shrink-0" />
+        <div className="flex items-center gap-3 px-[18px] py-4 border-b border-border">
+          <div className="w-8 h-8 rounded-[9px] flex items-center justify-center text-white shrink-0"
+            style={{ background: "linear-gradient(135deg, #7c7cf0, #a5a5ff)" }}>
+            <Search size={15} className="text-white" />
+          </div>
           <input ref={inputRef} value={query} onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search issues, notes, keys, people..."
-            className="flex-1 text-[14px] bg-transparent outline-none text-ink placeholder:text-muted/50" />
-          <kbd className="font-mono text-[10px] text-muted/50 bg-surface-2 px-1.5 py-0.5 rounded border border-border">ESC</kbd>
+            placeholder="Search issues, notes, keys, people…"
+            className="flex-1 text-[17px] bg-transparent outline-none text-ink placeholder:text-muted/40"
+            style={{ letterSpacing: "-0.015em" }} />
+          <kbd className="font-mono text-[10.5px] text-muted/50 bg-surface-2 px-1.5 py-0.5 rounded border border-border">ESC</kbd>
         </div>
 
         {/* Results */}
-        <div className="max-h-[360px] overflow-y-auto">
+        <div className="max-h-[380px] overflow-y-auto">
           {query.trim() === "" ? (
-            <div className="px-4 py-3">
-              <p className="text-[11px] font-medium text-muted uppercase tracking-wider mb-2">Quick links</p>
+            <div className="px-[18px] py-[14px]">
+              <p className="text-[11px] font-semibold text-muted uppercase tracking-[0.08em] mb-2.5">Quick links</p>
               {pages.slice(0, 5).map((p, i) => (
                 <button key={p.id} onClick={() => go(p)}
-                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-[13px] transition-colors ${i === activeIdx ? "bg-surface-2 text-ink" : "text-ink/70 hover:bg-surface-2"}`}>
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] text-[13px] transition-colors ${i === activeIdx ? "bg-surface-2 text-ink" : "text-ink/70 hover:bg-surface-2"}`}>
                   {typeIcon("page")}
-                  {p.title}
+                  <span style={{ letterSpacing: "-0.005em" }}>{p.title}</span>
                 </button>
               ))}
             </div>
           ) : loading ? (
-            <div className="px-4 py-8 text-center">
-              <div className="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin mx-auto" />
+            <div className="px-4 py-10 text-center">
+              <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin mx-auto" />
             </div>
           ) : results.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[13px] text-muted">
-              No results for "{query}"
+            <div className="px-4 py-10 text-center text-[13px] text-muted">
+              No results for "<span className="text-ink font-medium">{query}</span>"
             </div>
           ) : (
-            <div className="px-2 py-2">
+            <div className="px-2.5 py-2">
               {results.map((r, i) => (
                 <button key={`${r.type}-${r.id}`} onClick={() => go(r)}
                   onMouseEnter={() => setActiveIdx(i)}
-                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-colors ${i === activeIdx ? "bg-surface-2" : "hover:bg-surface-2/50"}`}>
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] text-left transition-colors ${i === activeIdx ? "bg-surface-2" : "hover:bg-surface-2/50"}`}>
                   {typeIcon(r.type)}
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] text-ink font-medium truncate">{r.title}</div>
+                    <div className="text-[13px] text-ink font-medium truncate" style={{ letterSpacing: "-0.005em" }}>{r.title}</div>
                     {r.subtitle && <div className="text-[11px] text-muted truncate">{r.subtitle}</div>}
                   </div>
                   <span className="text-[10px] text-muted/50 bg-surface-2 px-1.5 py-0.5 rounded capitalize shrink-0">{r.type}</span>
@@ -423,10 +428,10 @@ function SearchModal({ orgId, onClose }: { orgId: string; onClose: () => void })
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 border-t border-border flex items-center gap-4 text-[10.5px] text-muted">
-          <span><kbd className="font-mono bg-surface-2 px-1 py-0.5 rounded border border-border">↑↓</kbd> navigate</span>
-          <span><kbd className="font-mono bg-surface-2 px-1 py-0.5 rounded border border-border">↵</kbd> open</span>
-          <span><kbd className="font-mono bg-surface-2 px-1 py-0.5 rounded border border-border">esc</kbd> close</span>
+        <div className="px-[14px] py-2.5 border-t border-border bg-surface-2/30 flex items-center gap-4 text-[10.5px] text-muted">
+          <span className="flex items-center gap-1.5"><kbd className="font-mono bg-surface px-1.5 py-0.5 rounded border border-border text-ink/60 font-medium">↑↓</kbd> navigate</span>
+          <span className="flex items-center gap-1.5"><kbd className="font-mono bg-surface px-1.5 py-0.5 rounded border border-border text-ink/60 font-medium">↵</kbd> open</span>
+          <span className="flex items-center gap-1.5"><kbd className="font-mono bg-surface px-1.5 py-0.5 rounded border border-border text-ink/60 font-medium">esc</kbd> close</span>
         </div>
       </div>
     </>

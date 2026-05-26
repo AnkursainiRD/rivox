@@ -44,6 +44,10 @@ async function start() {
         fetch(`${process.env.RENDER_EXTERNAL_URL}/api/health`).catch(() => {});
       }, 14 * 60 * 1000);
     }
+
+    // Start Discord bot listener
+    const { startDiscordBot } = require("./ai/discord-bot");
+    startDiscordBot();
   });
 }
 

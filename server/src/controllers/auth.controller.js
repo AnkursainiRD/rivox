@@ -136,17 +136,46 @@ exports.getMe = async (req, res, next) => {
     });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const orgs = await Organization.findAll({
-      include: [{
-        model: User,
-        as: "members",
-        where: { id: decoded.userId },
-        attributes: [],
-        through: { attributes: ["role"] },
-      }],
-    });
+    const sequelize = require("../db");
+    const { QueryTypes } = require("sequelize");
 
-    res.json({ user, organizations: orgs });
+    const orgs = await sequelize.query(
+      `SELECT o.id, o.name, o.slug, o.logo_url, o.created_at,
+              om.role AS "OrgMember.role",
+              CAST((SELECT COUNT(*) FROM org_members WHERE org_id = o.id) AS INTEGER) AS member_count,
+              CAST((SELECT COUNT(*) FROM api_keys WHERE org_id = o.id) AS INTEGER) AS key_count
+       FROM organizations o
+       JOIN org_members om ON om.org_id = o.id AND om.user_id = :userId
+       ORDER BY o.created_at DESC`,
+      { replacements: { userId: decoded.userId }, type: QueryTypes.SELECT }
+    );
+
+    // Fetch avatar previews for each org
+    const orgIds = orgs.map((o) => o.id);
+    let avatarMap = {};
+    if (orgIds.length > 0) {
+      const avatars = await sequelize.query(
+        `SELECT om.org_id, u.display_name, u.avatar_url
+         FROM org_members om JOIN users u ON u.id = om.user_id
+         WHERE om.org_id IN (:orgIds)
+         ORDER BY om.joined_at ASC`,
+        { replacements: { orgIds }, type: QueryTypes.SELECT }
+      );
+      for (const a of avatars) {
+        if (!avatarMap[a.org_id]) avatarMap[a.org_id] = [];
+        if (avatarMap[a.org_id].length < 4) avatarMap[a.org_id].push(a);
+      }
+    }
+
+    const result = orgs.map((o) => ({
+      id: o.id, name: o.name, slug: o.slug, logo_url: o.logo_url,
+      OrgMember: { role: o["OrgMember.role"] },
+      member_count: o.member_count,
+      key_count: o.key_count,
+      members_preview: avatarMap[o.id] || [],
+    }));
+
+    res.json({ user, organizations: result });
   } catch (err) {
     next(err);
   }

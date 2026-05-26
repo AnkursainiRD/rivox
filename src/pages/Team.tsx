@@ -106,7 +106,7 @@ export function TeamPage({ orgId: _orgId }: { orgId?: string }) {
           <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
         </div>
       ) : (
-        <GroupsView groups={groups} orgId={_orgId} orgMembers={orgMembers} onRefresh={fetchData} showCreateGroup={showCreateGroup} setShowCreateGroup={setShowCreateGroup} />
+        <GroupsView groups={groups} orgId={_orgId} orgMembers={orgMembers} onRefresh={fetchData} onMembersChange={setOrgMembers} showCreateGroup={showCreateGroup} setShowCreateGroup={setShowCreateGroup} />
       )}
     </div>
   );
@@ -250,7 +250,7 @@ function CreateGroupPanel({ orgId, onClose, onCreated, orgMembers }: { orgId: st
 
 /* ── Groups View ── */
 
-function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, showCreateGroup, setShowCreateGroup }: { groups: GroupData[]; orgId: string; orgMembers: OrgMemberData[]; onRefresh: () => void; showCreateGroup: boolean; setShowCreateGroup: (v: boolean) => void }) {
+function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersChange, showCreateGroup, setShowCreateGroup }: { groups: GroupData[]; orgId: string; orgMembers: OrgMemberData[]; onRefresh: () => void; onMembersChange: (m: OrgMemberData[]) => void; showCreateGroup: boolean; setShowCreateGroup: (v: boolean) => void }) {
   const [selectedGroup, setSelectedGroup] = useState(0);
   const [members, setMembers] = useState<MemberData[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -550,6 +550,16 @@ function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, showCreateGr
                           {role === "super_admin" ? "Admin" : role.charAt(0).toUpperCase() + role.slice(1)} ▾
                         </span>
                         <MemberMenu
+                          currentRole={role}
+                          onChangeRole={async (newRole) => {
+                            try {
+                              await api.patch(`/orgs/${_orgId}/members/${m.user.id}`, { role: newRole });
+                              // Update locally without full page reload
+                              onMembersChange(orgMembers.map((om) =>
+                                om.user.id === m.user.id ? { ...om, role: newRole } : om
+                              ));
+                            } catch { /* ignore */ }
+                          }}
                           onRemove={async () => {
                             await api.delete(`/groups/${group.id}/members/${m.user.id}`);
                             fetchMembers();
@@ -710,8 +720,15 @@ function PermissionsPanel({ groups, onClose }: { groups: GroupData[]; onClose: (
 
 /* ── Member `...` Menu ── */
 
-function MemberMenu({ onRemove, memberName }: { onRemove: () => void; memberName: string }) {
+function MemberMenu({ onRemove, onChangeRole, memberName, currentRole }: {
+  onRemove: () => void;
+  onChangeRole?: (role: string) => void;
+  memberName: string;
+  currentRole?: string;
+}) {
   const [open, setOpen] = useState(false);
+  const [showRoles, setShowRoles] = useState(false);
+  const [changingRole, setChangingRole] = useState<string | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
 
@@ -720,8 +737,11 @@ function MemberMenu({ onRemove, memberName }: { onRemove: () => void; memberName
       const rect = btnRef.current.getBoundingClientRect();
       setPos({ top: rect.bottom + 4, left: rect.right - 160 });
     }
+    setShowRoles(false);
     setOpen(!open);
   };
+
+  const roles = ["super_admin", "admin", "employee"];
 
   return (
     <div className="relative">
@@ -731,17 +751,51 @@ function MemberMenu({ onRemove, memberName }: { onRemove: () => void; memberName
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="fixed z-50 w-40 bg-surface border border-border rounded-card shadow-popover py-1" style={{ top: pos.top, left: pos.left }}>
-            <button className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-ink hover:bg-surface-2 transition-colors">
-              Change role
-            </button>
-            <div className="h-px bg-border my-1" />
-            <button
-              onClick={() => { setOpen(false); onRemove(); }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
-            >
-              Remove {memberName.split(" ")[0]}
-            </button>
+          <div className="fixed z-50 w-44 bg-surface border border-border rounded-card shadow-popover py-1" style={{ top: pos.top, left: pos.left }}>
+            {!showRoles ? (
+              <>
+                <button
+                  onClick={() => onChangeRole ? setShowRoles(true) : null}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-ink hover:bg-surface-2 transition-colors"
+                >
+                  Change role
+                </button>
+                <div className="h-px bg-border my-1" />
+                <button
+                  onClick={() => { setOpen(false); onRemove(); }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                >
+                  Remove {memberName.split(" ")[0]}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">Select role</div>
+                {roles.map((r) => (
+                  <button
+                    key={r}
+                    disabled={changingRole !== null}
+                    onClick={async () => {
+                      if (r === currentRole) return;
+                      setChangingRole(r);
+                      await onChangeRole?.(r);
+                      setChangingRole(null);
+                      setOpen(false);
+                    }}
+                    className={`flex items-center justify-between w-full px-3 py-2 text-[13px] hover:bg-surface-2 transition-colors ${
+                      r === currentRole ? "text-accent font-medium" : "text-ink"
+                    }`}
+                  >
+                    {r === "super_admin" ? "Super Admin" : r.charAt(0).toUpperCase() + r.slice(1)}
+                    {changingRole === r ? (
+                      <div className="w-3.5 h-3.5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                    ) : r === currentRole ? (
+                      <span className="text-accent">✓</span>
+                    ) : null}
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         </>
       )}
