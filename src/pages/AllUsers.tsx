@@ -141,20 +141,35 @@ export function AllUsersPage() {
                       {roleMenu === u.id && (
                         <>
                           <div className="fixed inset-0 z-40" onClick={() => setRoleMenu(null)} />
-                          <div className="absolute left-4 top-10 z-50 w-40 bg-surface border border-border rounded-card shadow-popover py-1">
+                          <div className="fixed z-50 w-44 bg-surface border border-border rounded-xl shadow-popover py-1.5"
+                            ref={(el) => {
+                              if (!el) return;
+                              const btn = el.previousElementSibling?.previousElementSibling as HTMLElement;
+                              if (!btn) return;
+                              const rect = btn.getBoundingClientRect();
+                              const spaceBelow = window.innerHeight - rect.bottom;
+                              if (spaceBelow > 140) {
+                                el.style.top = `${rect.bottom + 4}px`;
+                              } else {
+                                el.style.top = `${rect.top - el.offsetHeight - 4}px`;
+                              }
+                              el.style.left = `${Math.min(rect.right - el.offsetWidth, window.innerWidth - el.offsetWidth - 8)}px`;
+                            }}>
                             {(["super_admin", "admin", "user"] as const).map((r) => {
                               const rb = roleBadge[r];
                               return (
                                 <button
                                   key={r}
                                   onClick={() => changeRole(u.id, r)}
-                                  className={`flex items-center gap-2 w-full px-3 py-2 text-[13px] transition-colors ${
+                                  className={`flex items-center justify-between w-full px-3 py-2 text-[13px] transition-colors ${
                                     u.role === r ? "text-accent bg-accent-soft/50" : "text-ink hover:bg-surface-2"
                                   }`}
                                 >
-                                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${rb.style}`}>
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${rb.style}`}>
+                                    {(r === "super_admin" || r === "admin") && <Shield size={9} strokeWidth={1.6} />}
                                     {rb.label}
                                   </span>
+                                  {u.role === r && <span className="text-accent text-[12px]">✓</span>}
                                 </button>
                               );
                             })}

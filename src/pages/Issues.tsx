@@ -244,13 +244,18 @@ export function IssuesPage({ orgId }: { orgId?: string }) {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const updateIssue = async (id: string, field: string, value: string | null) => {
-    // Fields with nested objects need a refetch, others can update locally
-    const needsRefetch = field === "assigned_to" || field === "assigned_group" || field === "channel_id";
-    if (!needsRefetch) {
-      setIssues((prev) => prev.map((i) => i.id === id ? { ...i, [field]: value } : i));
+    // Optimistic update for all fields
+    setIssues((prev) => prev.map((i) => i.id === id ? { ...i, [field]: value } : i));
+    try {
+      await api.patch(`/issues/${id}`, { [field]: value });
+      // For fields with nested objects, silently refetch to get full data without loading state
+      if (field === "assigned_to" || field === "assigned_group" || field === "channel_id") {
+        const data = await api.get<{ issues: Issue[] }>(`/orgs/${orgId}/issues?limit=100`);
+        setIssues(data.issues);
+      }
+    } catch {
+      fetchData();
     }
-    await api.patch(`/issues/${id}`, { [field]: value });
-    if (needsRefetch) fetchData();
   };
 
   const deleteIssue = async (id: string) => {
@@ -1664,6 +1669,11 @@ function PersonPicker({ value, orgMembers, onChange }: {
               Assign
             </span>)}
       </button>
+      {value && (
+        <button onClick={(e) => { e.stopPropagation(); onChange(null); }} className="text-muted/40 hover:text-red-500 transition-colors ml-1" title="Remove assignee">
+          <X size={12} />
+        </button>
+      )}
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
@@ -2245,8 +2255,16 @@ export function IssueDetailPage({ orgId, userId }: { orgId?: string; userId?: st
 
   const update = async (field: string, value: string | null) => {
     if (!issue) return;
-    await api.patch(`/issues/${issue.id}`, { [field]: value });
-    fetchIssue();
+    // Optimistic update
+    setIssue((prev) => prev ? { ...prev, [field]: value } : prev);
+    try {
+      await api.patch(`/issues/${issue.id}`, { [field]: value });
+      // Silently refetch for nested data without loading state
+      const data = await api.get<Issue>(`/issues/${issue.id}`);
+      setIssue(data);
+    } catch {
+      fetchIssue();
+    }
   };
 
   const saveDesc = async () => {
