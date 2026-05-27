@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { auth, requireRole } = require("../middleware/auth");
+const { auth, requireRole, requireOrgRole } = require("../middleware/auth");
 
 const authCtrl = require("../controllers/auth.controller");
 const orgsCtrl = require("../controllers/orgs.controller");
@@ -74,6 +74,7 @@ router.get("/orgs", auth, orgsCtrl.listAll);
 router.post("/orgs", auth, orgsCtrl.create);
 router.post("/orgs/:orgId/join", auth, orgsCtrl.joinOrg);
 router.get("/orgs/:orgId", auth, orgsCtrl.getById);
+router.patch("/orgs/:orgId", auth, requireRole("super_admin", "admin"), orgsCtrl.update);
 router.get("/orgs/:orgId/members", auth, orgsCtrl.getMembers);
 router.post("/orgs/:orgId/members", auth, requireRole("super_admin", "admin"), orgsCtrl.addMember);
 router.patch("/orgs/:orgId/members/:userId", auth, requireRole("super_admin"), orgsCtrl.updateMemberRole);
@@ -82,23 +83,23 @@ router.delete("/orgs/:orgId/members/:userId", auth, requireRole("super_admin", "
 
 
 // ── Groups ──────────────────────────────────────────────────
-router.get("/orgs/:orgId/groups", auth, groupsCtrl.list);
+router.get("/orgs/:orgId/groups", auth, requireRole("super_admin", "admin", "employee"), groupsCtrl.list);
 router.post("/orgs/:orgId/groups", auth, requireRole("super_admin", "admin"), groupsCtrl.create);
-router.get("/groups/:groupId/members", auth, groupsCtrl.getMembers);
-router.get("/groups/:groupId/keys", auth, groupsCtrl.getKeys);
-router.post("/groups/:groupId/members", auth, groupsCtrl.addMember);
-router.delete("/groups/:groupId/members/:userId", auth, groupsCtrl.removeMember);
-router.get("/groups/:groupId/permissions", auth, groupsCtrl.getPermissions);
-router.put("/groups/:groupId/permissions", auth, groupsCtrl.updatePermission);
-router.patch("/groups/:groupId", auth, groupsCtrl.update);
-router.delete("/groups/:groupId", auth, groupsCtrl.remove);
+router.get("/groups/:groupId/members", auth, requireOrgRole("super_admin", "admin", "employee"), groupsCtrl.getMembers);
+router.get("/groups/:groupId/keys", auth, requireOrgRole("super_admin", "admin"), groupsCtrl.getKeys);
+router.post("/groups/:groupId/members", auth, requireOrgRole("super_admin", "admin"), groupsCtrl.addMember);
+router.delete("/groups/:groupId/members/:userId", auth, requireOrgRole("super_admin", "admin"), groupsCtrl.removeMember);
+router.get("/groups/:groupId/permissions", auth, requireOrgRole("super_admin", "admin"), groupsCtrl.getPermissions);
+router.put("/groups/:groupId/permissions", auth, requireOrgRole("super_admin", "admin"), groupsCtrl.updatePermission);
+router.patch("/groups/:groupId", auth, requireOrgRole("super_admin", "admin"), groupsCtrl.update);
+router.delete("/groups/:groupId", auth, requireOrgRole("super_admin", "admin"), groupsCtrl.remove);
 
 
 
 // ── API Keys ────────────────────────────────────────────────
-router.get("/orgs/:orgId/keys", auth, keysCtrl.list);
-router.post("/orgs/:orgId/keys", auth, keysCtrl.create);
-router.get("/keys/:keyId", auth, keysCtrl.getById);
+router.get("/orgs/:orgId/keys", auth, requireRole("super_admin", "admin", "employee"), keysCtrl.list);
+router.post("/orgs/:orgId/keys", auth, requireRole("super_admin", "admin"), keysCtrl.create);
+router.get("/keys/:keyId", auth, requireOrgRole("super_admin", "admin", "employee"), keysCtrl.getById);
 router.get("/keys/:keyId/value", auth, keysCtrl.getValue);
 router.patch("/keys/:keyId", auth, keysCtrl.update);
 router.post("/keys/:keyId/share/user", auth, keysCtrl.shareWithUser);
@@ -109,10 +110,10 @@ router.delete("/keys/:keyId/access/user/:userId", auth, keysCtrl.removeUserAcces
 
 
 // ── Tasks ───────────────────────────────────────────────────
-router.get("/orgs/:orgId/tasks", auth, tasksCtrl.list);
-router.post("/orgs/:orgId/tasks", auth, tasksCtrl.create);
-router.patch("/tasks/:taskId", auth, tasksCtrl.update);
-router.delete("/tasks/:taskId", auth, tasksCtrl.remove);
+router.get("/orgs/:orgId/tasks", auth, requireRole("super_admin", "admin", "employee"), tasksCtrl.list);
+router.post("/orgs/:orgId/tasks", auth, requireRole("super_admin", "admin", "employee"), tasksCtrl.create);
+router.patch("/tasks/:taskId", auth, requireOrgRole("super_admin", "admin", "employee"), tasksCtrl.update);
+router.delete("/tasks/:taskId", auth, requireOrgRole("super_admin", "admin", "employee"), tasksCtrl.remove);
 
 // ── AI Copilot Chat ────────────────────────────────────────
 const { handleChat } = require("../ai/chat");
@@ -188,18 +189,18 @@ router.delete("/channels/:channelId", auth, channelsCtrl.remove);
 // ── Issues (global + org-scoped) ────────────────────────────
 router.get("/issues/all", auth, issuesCtrl.list);
 router.post("/issues/create", auth, issuesCtrl.create);
-router.get("/orgs/:orgId/issues", auth, issuesCtrl.list);
-router.post("/orgs/:orgId/issues", auth, issuesCtrl.create);
-router.get("/orgs/:orgId/labels", auth, issuesCtrl.listLabels);
-router.post("/orgs/:orgId/labels", auth, issuesCtrl.createLabel);
-router.get("/issues/:issueId", auth, issuesCtrl.getById);
-router.patch("/issues/:issueId", auth, issuesCtrl.update);
-router.delete("/issues/:issueId", auth, issuesCtrl.remove);
-router.post("/issues/:issueId/notify", auth, issuesCtrl.notify);
-router.post("/issues/:issueId/comments", auth, issuesCtrl.addComment);
+router.get("/orgs/:orgId/issues", auth, requireRole("super_admin", "admin", "employee"), issuesCtrl.list);
+router.post("/orgs/:orgId/issues", auth, requireRole("super_admin", "admin", "employee"), issuesCtrl.create);
+router.get("/orgs/:orgId/labels", auth, requireRole("super_admin", "admin", "employee"), issuesCtrl.listLabels);
+router.post("/orgs/:orgId/labels", auth, requireRole("super_admin", "admin"), issuesCtrl.createLabel);
+router.get("/issues/:issueId", auth, requireOrgRole("super_admin", "admin", "employee"), issuesCtrl.getById);
+router.patch("/issues/:issueId", auth, requireOrgRole("super_admin", "admin", "employee"), issuesCtrl.update);
+router.delete("/issues/:issueId", auth, requireOrgRole("super_admin", "admin"), issuesCtrl.remove);
+router.post("/issues/:issueId/notify", auth, requireOrgRole("super_admin", "admin", "employee"), issuesCtrl.notify);
+router.post("/issues/:issueId/comments", auth, requireOrgRole("super_admin", "admin", "employee"), issuesCtrl.addComment);
 router.patch("/comments/:commentId", auth, issuesCtrl.updateComment);
 router.delete("/comments/:commentId", auth, issuesCtrl.deleteComment);
-router.post("/issues/:issueId/labels", auth, issuesCtrl.addLabel);
+router.post("/issues/:issueId/labels", auth, requireOrgRole("super_admin", "admin"), issuesCtrl.addLabel);
 
 
 

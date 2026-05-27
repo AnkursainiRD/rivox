@@ -122,10 +122,27 @@ function CreateGroupPanel({ orgId, onClose, onCreated, orgMembers }: { orgId: st
   const [error, setError] = useState<string | null>(null);
   const [memberSearch, setMemberSearch] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
+  const [allUsers, setAllUsers] = useState<OrgMemberData[]>([]);
 
   const colors = ["#5b5bd6", "#3b82f6", "#ec4899", "#f59e0b", "#10b981", "#6366f1", "#ef4444", "#71717a"];
 
-  const filteredMembers = orgMembers.filter((om) =>
+  // For admin/super_admin, fetch all platform users so they can add anyone
+  useEffect(() => {
+    api.get<{ id: string; username: string; display_name: string | null; email: string; avatar_url: string | null; role: string }[]>("/users")
+      .then((users) => {
+        // Convert to OrgMemberData format, exclude users already in orgMembers
+        const orgMemberIds = new Set(orgMembers.map((om) => om.user.id));
+        const extra: OrgMemberData[] = users
+          .filter((u) => !orgMemberIds.has(u.id))
+          .map((u) => ({ id: "", role: "employee", user: { id: u.id, username: u.username, display_name: u.display_name, email: u.email, avatar_url: u.avatar_url } }));
+        setAllUsers([...orgMembers, ...extra]);
+      })
+      .catch(() => setAllUsers(orgMembers)); // Fallback to org members if not admin
+  }, [orgMembers]);
+
+  const membersToShow = allUsers.length > 0 ? allUsers : orgMembers;
+
+  const filteredMembers = membersToShow.filter((om) =>
     !memberSearch || (om.user.display_name || om.user.username).toLowerCase().includes(memberSearch.toLowerCase()) ||
     om.user.email.toLowerCase().includes(memberSearch.toLowerCase())
   );
@@ -145,9 +162,13 @@ function CreateGroupPanel({ orgId, onClose, onCreated, orgMembers }: { orgId: st
     setError(null);
     try {
       const group = await api.post<{ id: string }>(`/orgs/${orgId}/groups`, { name: name.trim(), description: description.trim() || null, color });
-      // Add selected members
+      // Add selected members — if user isn't in org yet, add them first
+      const orgMemberIds = new Set(orgMembers.map((om) => om.user.id));
       for (const userId of selectedMembers) {
-        await api.post(`/groups/${group.id}/members`, { user_id: userId });
+        if (!orgMemberIds.has(userId)) {
+          await api.post(`/orgs/${orgId}/members`, { user_id: userId, role: "employee" }).catch(() => {});
+        }
+        await api.post(`/groups/${group.id}/members`, { user_id: userId }).catch((e) => console.error("Failed to add member to group:", e));
       }
       onCreated();
     } catch (err) {
@@ -158,7 +179,7 @@ function CreateGroupPanel({ orgId, onClose, onCreated, orgMembers }: { orgId: st
   };
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
         <h3 className="text-[15px] font-semibold text-ink">New group</h3>
         <button type="button" onClick={onClose} className="text-muted hover:text-ink transition-colors text-lg">×</button>
@@ -244,7 +265,7 @@ function CreateGroupPanel({ orgId, onClose, onCreated, orgMembers }: { orgId: st
           </button>
         </div>
       </form>
-    </>
+    </div>
   );
 }
 
@@ -289,11 +310,22 @@ function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersCha
 
   if (groups.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <Users size={32} className="text-muted mb-3" />
-        <p className="text-sm font-medium text-ink mb-1">No groups yet</p>
-        <p className="text-xs text-muted">Create your first group to organize your team.</p>
-      </div>
+      <>
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <Users size={32} className="text-muted mb-3" />
+          <p className="text-sm font-medium text-ink mb-1">No groups yet</p>
+          <p className="text-xs text-muted">Create your first group to organize your team.</p>
+        </div>
+
+        {showCreateGroup && (
+          <>
+            <div className="fixed inset-0 z-50 bg-ink/10 backdrop-blur-[3px]" onClick={() => setShowCreateGroup(false)} />
+            <div className="fixed right-0 top-0 bottom-0 z-50 w-full sm:w-[400px] h-screen bg-surface border-l border-border shadow-xl text-left overflow-hidden">
+              <CreateGroupPanel orgId={_orgId} orgMembers={orgMembers} onClose={() => setShowCreateGroup(false)} onCreated={() => { setShowCreateGroup(false); onRefresh(); }} />
+            </div>
+          </>
+        )}
+      </>
     );
   }
 

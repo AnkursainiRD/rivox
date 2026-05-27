@@ -72,7 +72,7 @@ exports.update = async (req, res, next) => {
   try {
     const key = await ApiKey.findByPk(req.params.keyId);
     if (!key) return res.status(404).json({ error: "Key not found" });
-    if (!(await canManageKey(key, req.user.id))) return res.status(403).json({ error: "Only the key owner or admin can edit this key" });
+    if (!(await canManageKey(key, req.user.id))) return res.status(403).json({ error: "Insufficient permission: only key owner or admin can edit this key" });
     await key.update(req.body);
     await logActivity(key.org_id, req.user.id, "updated", "api_key", key.id, req.body);
     res.json(key);
@@ -120,7 +120,7 @@ exports.shareWithUser = async (req, res, next) => {
   try {
     const keyCheck = await ApiKey.findByPk(req.params.keyId);
     if (!keyCheck) return res.status(404).json({ error: "Key not found" });
-    if (!(await canManageKey(keyCheck, req.user.id))) return res.status(403).json({ error: "Only the key owner or admin can share this key" });
+    if (!(await canManageKey(keyCheck, req.user.id))) return res.status(403).json({ error: "Insufficient permission: only key owner or admin can share this key" });
     const { user_id, permission = "view" } = req.body;
     await ApiKeyUserAccess.upsert({ key_id: req.params.keyId, user_id, permission, granted_by: req.user.id });
 
@@ -142,7 +142,7 @@ exports.shareWithGroup = async (req, res, next) => {
   try {
     const keyCheck2 = await ApiKey.findByPk(req.params.keyId);
     if (!keyCheck2) return res.status(404).json({ error: "Key not found" });
-    if (!(await canManageKey(keyCheck2, req.user.id))) return res.status(403).json({ error: "Only the key owner or admin can share this key" });
+    if (!(await canManageKey(keyCheck2, req.user.id))) return res.status(403).json({ error: "Insufficient permission: only key owner or admin can share this key" });
     const { group_id, permission = "view" } = req.body;
     await ApiKeyGroupAccess.upsert({ key_id: req.params.keyId, group_id, permission, granted_by: req.user.id });
 
@@ -161,7 +161,7 @@ exports.revoke = async (req, res, next) => {
     const { reason } = req.body;
     const key = await ApiKey.findByPk(req.params.keyId);
     if (!key) return res.status(404).json({ error: "Key not found" });
-    if (!(await canManageKey(key, req.user.id))) return res.status(403).json({ error: "Only the key owner or admin can revoke this key" });
+    if (!(await canManageKey(key, req.user.id))) return res.status(403).json({ error: "Insufficient permission: only key owner or admin can revoke this key" });
 
     const keyData = { name: key.name, environment: key.environment, reason };
     const orgId = key.org_id;
@@ -183,7 +183,7 @@ exports.removeUserAccess = async (req, res, next) => {
   try {
     const keyCheck3 = await ApiKey.findByPk(req.params.keyId);
     if (!keyCheck3) return res.status(404).json({ error: "Key not found" });
-    if (!(await canManageKey(keyCheck3, req.user.id))) return res.status(403).json({ error: "Only the key owner or admin can remove access" });
+    if (!(await canManageKey(keyCheck3, req.user.id))) return res.status(403).json({ error: "Insufficient permission: only key owner or admin can remove access" });
     await ApiKeyUserAccess.destroy({ where: { key_id: req.params.keyId, user_id: req.params.userId } });
 
     const key = await ApiKey.findByPk(req.params.keyId);

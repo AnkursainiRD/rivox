@@ -19,6 +19,20 @@ exports.create = async (req, res, next) => {
   }
 };
 
+exports.update = async (req, res, next) => {
+  try {
+    const org = await Organization.findByPk(req.params.orgId);
+    if (!org) return res.status(404).json({ error: "Org not found" });
+    const { name, slug } = req.body;
+    if (name) org.name = name;
+    if (slug) org.slug = slug;
+    await org.save();
+    res.json(org);
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.listAll = async (req, res, next) => {
   try {
     const orgs = await sequelize.query(
