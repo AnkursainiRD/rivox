@@ -104,7 +104,17 @@ exports.getPermissions = async (req, res, next) => {
 exports.updatePermission = async (req, res, next) => {
   try {
     const { capability, level } = req.body;
-    await GroupPermission.upsert({ group_id: req.params.groupId, capability, level });
+    const groupId = req.params.groupId;
+    if (level === "none") {
+      await GroupPermission.destroy({ where: { group_id: groupId, capability } });
+    } else {
+      const existing = await GroupPermission.findOne({ where: { group_id: groupId, capability } });
+      if (existing) {
+        await existing.update({ level });
+      } else {
+        await GroupPermission.create({ group_id: groupId, capability, level });
+      }
+    }
     res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -126,6 +136,67 @@ exports.remove = async (req, res, next) => {
   try {
     await Group.destroy({ where: { id: req.params.groupId } });
     res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── USER PERMISSIONS ──────────────────────────────────────────────────────
+
+const { UserPermission } = require("../models");
+const { hasPermission } = require("../permissions");
+
+/**
+ * GET /orgs/:orgId/user-permissions
+ * Returns all granted action IDs per user for this org.
+ * Response: [{ user_id, module_id, action_id }]
+ */
+exports.getOrgUserPermissions = async (req, res, next) => {
+  try {
+    const perms = await UserPermission.findAll({
+      where: { org_id: req.params.orgId },
+      attributes: ["user_id", "module_id", "action_id"],
+    });
+    res.json(perms);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * PUT /orgs/:orgId/members/:userId/permissions
+ * Grant or revoke a specific action for a user.
+ * Body: { module_id: number, action_id: number, granted: boolean }
+ */
+exports.updateUserPermission = async (req, res, next) => {
+  try {
+    const { orgId, userId } = req.params;
+    const { module_id, action_id, granted } = req.body;
+    if (granted) {
+      await UserPermission.upsert({ org_id: orgId, user_id: userId, module_id, action_id });
+    } else {
+      await UserPermission.destroy({ where: { org_id: orgId, user_id: userId, module_id, action_id } });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /orgs/:orgId/members/:userId/permissions/check?module_id=2&action_id=4
+ * Helper endpoint: check if a specific user has a specific permission.
+ * Response: { granted: boolean }
+ */
+exports.checkUserPermission = async (req, res, next) => {
+  try {
+    const { orgId, userId } = req.params;
+    const { module_id, action_id } = req.query;
+    const granted = await hasPermission(
+      UserPermission, userId, orgId,
+      Number(module_id), Number(action_id)
+    );
+    res.json({ granted });
   } catch (err) {
     next(err);
   }

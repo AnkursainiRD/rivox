@@ -72,6 +72,21 @@ const GroupPermission = sequelize.define("GroupPermission", {
 Group.hasMany(GroupPermission, { foreignKey: "group_id", as: "permissions" });
 GroupPermission.belongsTo(Group, { foreignKey: "group_id" });
 
+// ── USER PERMISSIONS ───────────────────────────────────────
+// Stores per-user, per-org permission grants by module_id + action_id.
+// Presence of a row = permission granted. No row = denied.
+
+const UserPermission = sequelize.define("UserPermission", {
+  id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  module_id: { type: DataTypes.INTEGER, allowNull: false },
+  action_id: { type: DataTypes.INTEGER, allowNull: false },
+}, { tableName: "user_permissions", underscored: true, timestamps: false });
+
+User.hasMany(UserPermission, { foreignKey: "user_id", as: "permissions" });
+UserPermission.belongsTo(User, { foreignKey: "user_id" });
+Organization.hasMany(UserPermission, { foreignKey: "org_id" });
+UserPermission.belongsTo(Organization, { foreignKey: "org_id" });
+
 // ── API KEYS ───────────────────────────────────────────────
 
 const ApiKey = sequelize.define("ApiKey", {
@@ -275,7 +290,7 @@ NotificationPreference.belongsTo(User, { foreignKey: "user_id" });
 module.exports = {
   sequelize,
   Organization, User, OrgMember,
-  Group, GroupMember, GroupPermission,
+  Group, GroupMember, GroupPermission, UserPermission,
   ApiKey, ApiKeyUserAccess, ApiKeyGroupAccess, ApiKeyRevocation,
   Task, TaskTag, TaskTagMap,
   Channel,

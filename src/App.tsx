@@ -17,6 +17,7 @@ import { IssuesPage, IssueDetailPage } from "./pages/Issues";
 import { NotificationsPage } from "./pages/Notifications";
 import { OrganizationsPage } from "./pages/Organizations";
 import { AllUsersPage } from "./pages/AllUsers";
+import { RbacPage } from "./pages/Rbac";
 import { SettingsPage } from "./pages/Settings";
 import { HelpPage } from "./pages/Help";
 
@@ -111,6 +112,7 @@ function AuthenticatedApp({ auth, theme, toggle }: {
               <OrganizationsPage orgs={auth.orgs} activeOrg={auth.activeOrg} onSwitchOrg={auth.switchOrg} />
             } />
             <Route path="/all-users" element={<AllUsersPage />} />
+            <Route path="/rbac" element={<RbacPage orgId={auth.activeOrg.id} />} />
             <Route path="/settings" element={<SettingsPage user={auth.user} theme={theme} onToggleTheme={toggle} />} />
             <Route path="/help" element={<HelpPage />} />
           </Routes>

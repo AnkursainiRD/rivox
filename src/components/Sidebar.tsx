@@ -15,6 +15,7 @@ import {
   Bell,
   Building2,
   UserCog,
+  ShieldCheck,
   ArrowRight,
   Menu,
   X,
@@ -185,6 +186,19 @@ export function Sidebar({ theme, onToggleTheme, user, orgs, activeOrg, onSwitchO
             >
               <UserCog size={16} strokeWidth={1.6} />
               Employees
+            </NavLink>
+            <NavLink
+              to="/rbac"
+              className={({ isActive }) =>
+                `flex items-center gap-2.5 px-2 py-1.5 rounded-btn text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-accent-soft text-accent"
+                    : "text-ink hover:bg-surface-2"
+                }`
+              }
+            >
+              <ShieldCheck size={16} strokeWidth={1.6} />
+              Permissions
             </NavLink>
           </>
         )}

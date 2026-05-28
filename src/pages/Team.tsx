@@ -556,10 +556,15 @@ function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersCha
             </div>
           ) : (
             <div className="bg-surface border border-border rounded-card overflow-hidden mb-6">
-              {members.map((m, i) => {
+              {(() => {
+                    const currentUserOrgRole = orgMembers.find((om) => om.user.id === currentUserId)?.role;
+                    const canChangeRoles = currentUserOrgRole === "super_admin" || currentUserOrgRole === "admin";
+                    return members.map((m, i) => {
                     const orgMember = orgMembers.find((om) => om.user.id === m.user.id);
                     const role = orgMember?.role || "employee";
                     const colors = ["from-indigo-400 to-purple-400", "from-emerald-400 to-teal-400", "from-rose-400 to-pink-400", "from-amber-400 to-orange-400", "from-cyan-400 to-blue-400", "from-fuchsia-400 to-violet-400"];
+                    const isSelf = m.user.id === currentUserId;
+                    const showRolePicker = canChangeRoles && !isSelf;
                     return (
                       <div key={m.user.id} className={`flex items-center gap-3 px-4 py-3 ${i < members.length - 1 ? "border-b border-border" : ""} hover:bg-surface-2 transition-colors`}>
                         {m.user.avatar_url ? (
@@ -573,10 +578,22 @@ function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersCha
                           <p className="text-[13px] font-medium text-ink truncate">{m.user.display_name || m.user.username}</p>
                           <p className="text-[11.5px] text-muted truncate">{m.user.email}</p>
                         </div>
-                        <span className={`text-[12px] text-ink px-2.5 py-1 border border-border rounded-btn-sm shrink-0 whitespace-nowrap ${m.user.id === currentUserId ? "" : "cursor-pointer"}`}>
-                          {role === "super_admin" ? "Admin" : role.charAt(0).toUpperCase() + role.slice(1)} {m.user.id !== currentUserId && "▾"}
-                        </span>
-                        {m.user.id !== currentUserId && <MemberMenu
+                        {showRolePicker ? (
+                          <RoleBadge
+                            role={role}
+                            onChangeRole={async (r) => {
+                              try {
+                                await api.patch(`/orgs/${_orgId}/members/${m.user.id}`, { role: r });
+                                onMembersChange(orgMembers.map((om) => om.user.id === m.user.id ? { ...om, role: r } : om));
+                              } catch { /* ignore */ }
+                            }}
+                          />
+                        ) : (
+                          <span className="text-[12px] text-ink px-2.5 py-1 border border-border rounded-btn-sm shrink-0 whitespace-nowrap">
+                            {role === "super_admin" ? "Admin" : role.charAt(0).toUpperCase() + role.slice(1)}
+                          </span>
+                        )}
+                        {!isSelf && <MemberMenu
                           currentRole={role}
                           onChangeRole={async (newRole) => {
                             try {
@@ -595,7 +612,8 @@ function GroupsView({ groups, orgId: _orgId, orgMembers, onRefresh, onMembersCha
                         />}
                       </div>
                     );
-                  })}
+                  });
+                })()}
             </div>
           )}
 
@@ -741,6 +759,53 @@ function PermissionsPanel({ groups, onClose }: { groups: GroupData[]; onClose: (
         </div>
       </div>
     </>
+  );
+}
+
+/* ── Role Badge with picker ── */
+
+function RoleBadge({ role, onChangeRole }: { role: string; onChangeRole: (r: string) => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: rect.right - 160 });
+    }
+    setOpen((v) => !v);
+  };
+
+  const label = role === "super_admin" ? "Admin" : role.charAt(0).toUpperCase() + role.slice(1);
+
+  return (
+    <div className="relative shrink-0">
+      <button ref={btnRef} onClick={handleOpen} className="text-[12px] text-ink px-2.5 py-1 border border-border rounded-btn-sm whitespace-nowrap hover:bg-surface-2 transition-colors">
+        {label} ▾
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed z-50 w-40 bg-surface border border-border rounded-card shadow-popover py-1" style={{ top: pos.top, left: pos.left }}>
+            <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">Select role</div>
+            {["super_admin", "admin", "employee"].map((r) => (
+              <button
+                key={r}
+                onClick={async () => {
+                  if (r !== role) await onChangeRole(r);
+                  setOpen(false);
+                }}
+                className={`flex items-center justify-between w-full px-3 py-2 text-[13px] hover:bg-surface-2 transition-colors ${r === role ? "text-accent font-medium" : "text-ink"}`}
+              >
+                {r === "super_admin" ? "Super Admin" : r.charAt(0).toUpperCase() + r.slice(1)}
+                {r === role && <span className="text-accent">✓</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 

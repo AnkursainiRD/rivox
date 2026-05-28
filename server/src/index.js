@@ -35,6 +35,10 @@ async function start() {
   await sequelize.authenticate();
   console.log("Database connected via Sequelize");
 
+  // Sync user_permissions table (recreate if schema changed, safe while empty)
+  const { UserPermission } = require("./models");
+  await UserPermission.sync({ alter: true });
+
   app.listen(PORT, () => {
     console.log(`Rivox API running on http://localhost:${PORT}`);
 
