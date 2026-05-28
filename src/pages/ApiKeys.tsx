@@ -108,9 +108,28 @@ function CopyKeyButton({ keyId }: { keyId: string }) {
   );
 }
 
+type SortMode = "newest" | "oldest" | "az" | "za";
+const SORT_OPTIONS: { key: SortMode; label: string }[] = [
+  { key: "newest", label: "Newest first" },
+  { key: "oldest", label: "Oldest first" },
+  { key: "az", label: "A → Z" },
+  { key: "za", label: "Z → A" },
+];
+
+function sortKeys(keys: ApiKey[], mode: SortMode): ApiKey[] {
+  return [...keys].sort((a, b) => {
+    if (mode === "newest") return new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime();
+    if (mode === "oldest") return new Date(a.createdAt || a.created_at || 0).getTime() - new Date(b.createdAt || b.created_at || 0).getTime();
+    if (mode === "az") return a.name.localeCompare(b.name);
+    return b.name.localeCompare(a.name);
+  });
+}
+
 export function ApiKeysPage({ orgId, userId }: { orgId?: string; userId?: string }) {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
+  const [sortOpen, setSortOpen] = useState(false);
   const [showCreate, setShowCreate] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("create") === "true";
@@ -174,10 +193,33 @@ export function ApiKeysPage({ orgId, userId }: { orgId?: string; userId?: string
           <div className="hidden md:flex w-[260px] shrink-0 border-r border-border bg-surface flex-col">
             <div className="flex items-center justify-between px-4 py-2.5">
               <span className="text-[10.5px] font-semibold text-muted uppercase tracking-widest">All keys · {keys.length}</span>
-              <span className="text-[11px] text-muted">↕ sort</span>
+              <div className="relative">
+                <button
+                  onClick={() => setSortOpen((v) => !v)}
+                  className="flex items-center gap-1 text-[11px] text-muted hover:text-ink transition-colors"
+                >
+                  ↕ {SORT_OPTIONS.find((o) => o.key === sortMode)?.label ?? "sort"}
+                </button>
+                {sortOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setSortOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-50 w-36 bg-surface border border-border rounded-card shadow-popover py-1">
+                      {SORT_OPTIONS.map((o) => (
+                        <button
+                          key={o.key}
+                          onClick={() => { setSortMode(o.key); setSortOpen(false); }}
+                          className={`w-full text-left px-3 py-1.5 text-[12px] transition-colors ${sortMode === o.key ? "text-accent font-medium bg-accent-soft" : "text-ink hover:bg-surface-2"}`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-0.5">
-              {keys.map((k) => {
+              {sortKeys(keys, sortMode).map((k) => {
                 const sel = selectedKey?.id === k.id;
                 return (
                   <button
@@ -311,7 +353,7 @@ export function ApiKeysPage({ orgId, userId }: { orgId?: string; userId?: string
           </div>
 
           {/* Rows */}
-          {keys.map((k, i) => {
+          {sortKeys(keys, sortMode).map((k, i) => {
             const isShareOpen = shareKeyId === k.id;
             return (
               <div key={k.id} className="relative">
