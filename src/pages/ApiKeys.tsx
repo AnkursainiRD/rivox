@@ -46,6 +46,7 @@ interface ApiKey {
   auto_rotate: boolean;
   last_used_at: string | null;
   created_by: string;
+  creator?: { id: string; username: string; display_name?: string | null; avatar_url: string | null };
   created_at?: string;
   createdAt?: string;
   shared_user_count?: number;
@@ -194,6 +195,19 @@ export function ApiKeysPage({ orgId, userId }: { orgId?: string; userId?: string
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className={`w-[5px] h-[5px] rounded-full ${envColor[k.environment]}`} />
                         <span className="text-[10.5px] text-muted">{envLabel[k.environment] || k.environment}</span>
+                        {k.creator && (
+                          <>
+                            <span className="text-[10px] text-border">·</span>
+                            {k.creator.avatar_url ? (
+                              <img src={k.creator.avatar_url} className="w-3.5 h-3.5 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-3.5 h-3.5 rounded-full bg-accent/30 flex items-center justify-center text-[8px] font-bold text-accent">
+                                {(k.creator.display_name || k.creator.username).charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <span className="text-[10.5px] text-muted truncate">{k.creator.display_name || k.creator.username}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -291,7 +305,7 @@ export function ApiKeysPage({ orgId, userId }: { orgId?: string; userId?: string
             style={{ gridTemplateColumns: "1.6fr 0.6fr 0.9fr 1.2fr 0.5fr" }}>
             <div>Key</div>
             <div>Env</div>
-            <div>Last used</div>
+            <div>Created by</div>
             <div>Shared with</div>
             <div />
           </div>
@@ -327,9 +341,22 @@ export function ApiKeysPage({ orgId, userId }: { orgId?: string; userId?: string
                     </span>
                   </div>
 
-                  {/* Last used */}
-                  <div className="text-[12px] text-muted">
-                    {k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : "Never"}
+                  {/* Created by */}
+                  <div className="flex items-center gap-2">
+                    {k.creator ? (
+                      <>
+                        {k.creator.avatar_url ? (
+                          <img src={k.creator.avatar_url} className="w-6 h-6 rounded-full object-cover shrink-0" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[9px] font-bold text-accent shrink-0">
+                            {(k.creator.display_name || k.creator.username).charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="text-[12px] text-muted truncate">{k.creator.display_name || k.creator.username}</span>
+                      </>
+                    ) : (
+                      <span className="text-[12px] text-muted">—</span>
+                    )}
                   </div>
 
                   {/* Shared with — avatar stack */}
