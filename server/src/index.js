@@ -49,6 +49,26 @@ async function start() {
       }, 14 * 60 * 1000);
     }
 
+    // Auto-delete expired temp keys every 5 minutes
+    setInterval(async () => {
+      try {
+        const { ApiKey, ApiKeyUserAccess, ApiKeyGroupAccess, ApiKeyRevocation } = require("./models");
+        const { Op } = require("sequelize");
+        const expired = await ApiKey.findAll({
+          where: { expires_at: { [Op.lt]: new Date() } },
+        });
+        if (expired.length > 0) {
+          for (const key of expired) {
+            await ApiKeyUserAccess.destroy({ where: { key_id: key.id } });
+            await ApiKeyGroupAccess.destroy({ where: { key_id: key.id } });
+            await ApiKeyRevocation.destroy({ where: { key_id: key.id } });
+            await key.destroy();
+          }
+          console.log(`[Cleanup] Deleted ${expired.length} expired key(s)`);
+        }
+      } catch { /* ignore */ }
+    }, 5 * 60 * 1000);
+
     // Start Discord bot listener
     const { startDiscordBot } = require("./ai/discord-bot");
     startDiscordBot();

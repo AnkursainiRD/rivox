@@ -49,6 +49,9 @@ interface ApiKey {
   creator?: { id: string; username: string; display_name?: string | null; avatar_url: string | null };
   created_at?: string;
   createdAt?: string;
+  expires_at?: string | null;
+  is_expired?: boolean;
+  is_temp?: boolean;
   shared_user_count?: number;
   shared_group_count?: number;
   shared_total?: number;
@@ -237,6 +240,15 @@ export function ApiKeysPage({ orgId, userId }: { orgId?: string; userId?: string
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className={`w-[5px] h-[5px] rounded-full ${envColor[k.environment]}`} />
                         <span className="text-[10.5px] text-muted">{envLabel[k.environment] || k.environment}</span>
+                        {k.expires_at && (
+                          <>
+                            <span className="text-[10px] text-border">·</span>
+                            <span className={`text-[10px] font-medium flex items-center gap-1 ${new Date(k.expires_at) < new Date() ? "text-red-500" : "text-amber-600"}`}>
+                              <svg width="9" height="9" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" strokeLinecap="round" /></svg>
+                              {new Date(k.expires_at) < new Date() ? "Expired" : `Expires ${new Date(k.expires_at).toLocaleDateString()}`}
+                            </span>
+                          </>
+                        )}
                         {k.creator && (
                           <>
                             <span className="text-[10px] text-border">·</span>
@@ -797,6 +809,7 @@ function CreateKeyModal({ orgId, onClose, onCreated }: { orgId: string; onClose:
   const [isGlobal, setIsGlobal] = useState(false);
   const [autoRotate, setAutoRotate] = useState(false);
   const [showValue, setShowValue] = useState(false);
+  const [expiresIn, setExpiresIn] = useState<string>(""); // hours, empty = never
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shareInput, setShareInput] = useState("");
@@ -861,6 +874,7 @@ function CreateKeyModal({ orgId, onClose, onCreated }: { orgId: string; onClose:
       const key = await api.post<{ id: string }>(`/orgs/${orgId}/keys`, {
         name: name.trim(), fingerprint, encrypted_value: value.trim(),
         environment, is_global: isGlobal, auto_rotate: autoRotate,
+        expires_in: expiresIn ? Number(expiresIn) : undefined,
       });
       for (const s of sharedWith) {
         if (s.type === "user") await api.post(`/keys/${key.id}/share/user`, { user_id: s.id, permission: s.permission });
@@ -875,7 +889,7 @@ function CreateKeyModal({ orgId, onClose, onCreated }: { orgId: string; onClose:
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-ink/30 backdrop-blur-md" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[520px] bg-surface border border-border rounded-xl shadow-popover overflow-hidden">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[520px] max-h-[90vh] bg-surface border border-border rounded-xl shadow-popover overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-ink flex items-center justify-center">
@@ -935,6 +949,33 @@ function CreateKeyModal({ orgId, onClose, onCreated }: { orgId: string; onClose:
           <div className="flex gap-3">
             <Toggle checked={isGlobal} onChange={setIsGlobal} label="Global access" description="All org members can view" />
             <Toggle checked={autoRotate} onChange={setAutoRotate} label="Auto-rotate" description="Rotate every 90 days" />
+          </div>
+
+          {/* Temp key / expiry */}
+          <div>
+            <label className="text-[13px] font-medium text-ink mb-1.5 block">Expires after <span className="text-muted font-normal">optional</span></label>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: "Never", value: "" },
+                { label: "1 hour", value: "1" },
+                { label: "24 hours", value: "24" },
+                { label: "7 days", value: String(7 * 24) },
+                { label: "30 days", value: String(30 * 24) },
+              ].map((opt) => (
+                <button key={opt.value} type="button" onClick={() => setExpiresIn(opt.value)}
+                  className={`px-3 py-1.5 text-[12px] font-medium rounded-lg border transition-all ${
+                    expiresIn === opt.value ? "bg-ink text-surface border-ink" : "bg-surface text-ink border-border hover:bg-surface-2"
+                  }`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {expiresIn && (
+              <p className="text-[11px] text-muted mt-1.5 flex items-center gap-1">
+                <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" strokeLinecap="round" /></svg>
+                Key will auto-delete after {expiresIn === "1" ? "1 hour" : expiresIn === "24" ? "24 hours" : Number(expiresIn) / 24 + " days"}
+              </p>
+            )}
           </div>
 
           {!isGlobal && (
@@ -1107,7 +1148,7 @@ function EditKeyModal({ apiKey, onClose, onSaved, orgId }: { apiKey: ApiKey; onC
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-ink/30 backdrop-blur-md" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[520px] bg-surface border border-border rounded-xl shadow-popover overflow-hidden">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[520px] max-h-[90vh] bg-surface border border-border rounded-xl shadow-popover overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-ink flex items-center justify-center"><Pencil size={14} strokeWidth={1.6} className="text-surface" /></div>

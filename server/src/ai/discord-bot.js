@@ -273,12 +273,17 @@ async function processMessage(userMessage, discordUserId) {
 // Discord Gateway connection (simplified — uses HTTP polling for messages)
 // For production, use discord.js with gateway. This uses the simpler approach.
 let lastMessageId = null;
+let polling = false;
+const processedMessages = new Set(); // track IDs we've already handled
 
 async function pollMessages() {
-  const channelId = await getChannelId();
-  if (!channelId) return;
+  if (polling) return;
+  polling = true;
 
   try {
+    const channelId = await getChannelId();
+    if (!channelId) return;
+
     const url = lastMessageId
       ? `/channels/${channelId}/messages?after=${lastMessageId}&limit=10`
       : `/channels/${channelId}/messages?limit=1`;
@@ -287,12 +292,14 @@ async function pollMessages() {
 
     if (!Array.isArray(messages) || messages.length === 0) return;
 
-    // Update last seen message
+    // Update cursor to newest message immediately
     lastMessageId = messages[0].id;
 
-    // Process messages (newest first, reverse to process oldest first)
+    // Process messages oldest-first
     for (const msg of [...messages].reverse()) {
-      // Skip bot's own messages
+      // Skip if already processed, bot message, or own message
+      if (processedMessages.has(msg.id)) continue;
+      processedMessages.add(msg.id);
       if (msg.author.bot || msg.author.id === process.env.DISCORD_CLIENT_ID) continue;
 
       // Check if bot is mentioned (via mention_roles or content) or any message in the dedicated channel
@@ -365,6 +372,13 @@ async function pollMessages() {
     }
   } catch (err) {
     // Silently ignore polling errors
+  } finally {
+    // Prune old IDs to prevent memory leak (keep last 100)
+    if (processedMessages.size > 100) {
+      const arr = [...processedMessages];
+      arr.slice(0, arr.length - 100).forEach((id) => processedMessages.delete(id));
+    }
+    polling = false;
   }
 }
 

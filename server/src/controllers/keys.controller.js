@@ -36,12 +36,15 @@ exports.list = async (req, res, next) => {
       order: [["created_at", "DESC"]],
     });
 
-    // Add shared count
+    // Add shared count + expiry status
+    const now = new Date();
     const result = keys.map((k) => {
       const j = k.toJSON();
       j.shared_user_count = j.sharedUsers?.length || 0;
       j.shared_group_count = j.sharedGroups?.length || 0;
       j.shared_total = j.shared_user_count + j.shared_group_count;
+      j.is_expired = j.expires_at ? new Date(j.expires_at) < now : false;
+      j.is_temp = !!j.expires_at;
       return j;
     });
     res.json(result);
@@ -53,13 +56,20 @@ exports.list = async (req, res, next) => {
 exports.create = async (req, res, next) => {
   try {
     const crypto = require("crypto");
-    const { name, encrypted_value, environment, is_global, auto_rotate } = req.body;
+    const { name, encrypted_value, environment, is_global, auto_rotate, expires_in } = req.body;
     // Generate a safe hash-based fingerprint — reveals nothing about the key
     const hash = crypto.createHash("sha256").update(encrypted_value).digest("hex");
     const fingerprint = `fp:${hash.slice(0, 16)}`;
+
+    // Calculate expiry if expires_in is provided (in hours)
+    let expires_at = null;
+    if (expires_in && Number(expires_in) > 0) {
+      expires_at = new Date(Date.now() + Number(expires_in) * 60 * 60 * 1000);
+    }
+
     const key = await ApiKey.create({
       org_id: req.params.orgId, name, fingerprint, encrypted_value: encrypt(encrypted_value),
-      environment, is_global, auto_rotate, created_by: req.user.id,
+      environment, is_global, auto_rotate, expires_at, created_by: req.user.id,
     });
     await logActivity(req.params.orgId, req.user.id, "created", "api_key", key.id, { name, environment });
     res.status(201).json(key);
